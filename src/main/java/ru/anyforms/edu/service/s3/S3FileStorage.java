@@ -4,6 +4,12 @@ import org.springframework.web.multipart.MultipartFile;
 
 public interface S3FileStorage {
 
+    /** Подписанный URL для прямой загрузки из браузера в S3 (PUT), минуя бэкенд. */
+    record PresignedUpload(String uploadUrl, String key) {
+    }
+
+    PresignedUpload presignUpload(String filename, String contentType, String keyPrefix);
+
     /** Загружает файл в бакет, возвращает ключ объекта. */
     String upload(MultipartFile file, String keyPrefix);
 

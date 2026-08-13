@@ -12,9 +12,11 @@ import org.springframework.web.server.ResponseStatusException;
 import ru.anyforms.edu.dto.admin.CourseRequestDTO;
 import ru.anyforms.edu.dto.admin.LessonRequestDTO;
 import ru.anyforms.edu.dto.admin.ModuleRequestDTO;
+import ru.anyforms.edu.dto.admin.PresignUploadRequestDTO;
 import ru.anyforms.edu.dto.course.CourseResponseDTO;
 import ru.anyforms.edu.service.admin.AdminCourseService;
 import ru.anyforms.edu.service.course.CourseService;
+import ru.anyforms.edu.service.s3.S3FileStorage;
 
 import java.util.Map;
 import java.util.UUID;
@@ -29,6 +31,7 @@ public class AdminCourseController {
 
     private final CourseService courseService;
     private final AdminCourseService adminCourseService;
+    private final S3FileStorage s3FileStorage;
 
     @Operation(summary = "Курс целиком для админки", description = "Все модули и уроки, включая закрытые")
     @GetMapping("/course")
@@ -86,6 +89,18 @@ public class AdminCourseController {
     public ResponseEntity<Void> deleteLesson(@PathVariable UUID lessonId) {
         adminCourseService.deleteLesson(lessonId);
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Подписанный URL для прямой загрузки в S3",
+            description = "Файл уходит из браузера сразу в бакет (PUT по uploadUrl), бэкенд только подписывает. "
+                    + "Вернувшийся key сохраняем в модуль/урок. Требует CORS на бакете.")
+    @PostMapping("/presign-upload")
+    public ResponseEntity<Map<String, String>> presignUpload(@Valid @RequestBody PresignUploadRequestDTO request) {
+        String prefix = request.getPrefix() == null || request.getPrefix().isBlank()
+                ? "course" : request.getPrefix();
+        S3FileStorage.PresignedUpload presigned =
+                s3FileStorage.presignUpload(request.getFilename(), request.getContentType(), prefix);
+        return ResponseEntity.ok(Map.of("uploadUrl", presigned.uploadUrl(), "key", presigned.key()));
     }
 
     @ExceptionHandler(ResponseStatusException.class)
