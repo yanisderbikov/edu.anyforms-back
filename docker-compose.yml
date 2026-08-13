@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: edu-anyforms-postgres
+    environment:
+      POSTGRES_DB: edu_anyforms
+      POSTGRES_USER: yander
+      POSTGRES_PASSWORD: yander
+    ports:
+      - "5460:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U yander -d edu_anyforms" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - edu-anyforms-network
+
+  edu-anyforms-back:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: edu-anyforms-back
+    ports:
+      - "8091:8091"
+    env_file:
+      - .env
+    environment:
+      # Внутри compose-сети ходим в postgres по имени сервиса
+      POSTGRES_URL: jdbc:postgresql://postgres:5432/edu_anyforms
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - edu-anyforms-network
+
+volumes:
+  postgres_data:
+
+networks:
+  edu-anyforms-network:
+    driver: bridge

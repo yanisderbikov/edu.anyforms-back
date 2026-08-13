@@ -1,0 +1,9 @@
+target/
+.idea/
+*.iml
+.DS_Store
+
+# Секреты не коммитим
+.env
+.env.*
+!.env.example
