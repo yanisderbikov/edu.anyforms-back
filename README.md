@@ -19,14 +19,23 @@ java -jar target/edu-anyforms-back-1.0-SNAPSHOT.jar
 
 ## Что есть
 
-- **Публичное API** — `GET /api/public/course`: курс + модули + уроки одним JSON
-  (ровно тот формат, что ждёт фронтенд edu.anyforms-front). Уроки закрытых модулей наружу не отдаются.
-- **Админка (API)** — `/api/admin/**`, пока без авторизации (TODO: закрыть ролью ADMIN после email-логина):
+- **Авторизация по коду с почты** (NotiSend, как в anyforms-5):
+  - `POST /api/public/auth/request-code` `{email}` — код на почту (TTL 10 мин, 5 попыток,
+    повтор не чаще раза в минуту). Доступ есть у админов (`service_user`) и клиентов (`student`).
+  - `POST /api/public/auth/verify` `{email, code}` → `{token, role, email}`. JWT живёт месяц.
+  - **Одно устройство для клиентов**: новый вход меняет `student.current_session_id`,
+    старые токены гаснут. На админов не распространяется.
+  - Без `EMAIL_NOTISEND_API_KEY` письмо не шлётся — код виден в логе бэкенда (удобно локально).
+  - Шаблон письма: `resources/templates/email-login-code.html` (тёмный дизайн курса).
+- **API курса** — `GET /api/course` (требуется JWT, любая роль): курс + модули + уроки одним JSON.
+  Уроки закрытых модулей наружу не отдаются.
+- **Админка (API)** — `/api/admin/**`, только роль ADMIN. В Swagger — кнопка Authorize (Bearer JWT):
   - `GET /api/admin/course` — всё, включая закрытые модули
   - `PUT /api/admin/course` — шапка курса и ссылки поддержки
   - `POST/PUT/DELETE /api/admin/modules[/{id}]` — модули (points — списком, opensAt: null = открыт)
   - `POST /api/admin/modules/{id}/lessons`, `PUT/DELETE /api/admin/lessons/{id}` — уроки
-  - `GET/POST/DELETE /api/admin/service-users` — email'ы сервисных пользователей (входят через почту, как клиенты)
+  - `GET/POST/DELETE /api/admin/service-users` — email'ы админов
+  - `GET/POST/DELETE /api/admin/students` — email'ы клиентов (выдача/отзыв доступа к курсу)
 
   Файлы (видео/картинки) загружаются в S3 вручную, в админке указывается готовая ссылка
   (или ключ объекта — тогда бэкенд отдаст presigned URL).

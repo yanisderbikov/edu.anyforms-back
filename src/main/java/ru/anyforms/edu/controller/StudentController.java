@@ -4,54 +4,68 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import ru.anyforms.edu.dto.admin.ServiceUserRequestDTO;
-import ru.anyforms.edu.model.user.ServiceUser;
-import ru.anyforms.edu.service.user.ServiceUserService;
+import ru.anyforms.edu.model.user.Student;
+import ru.anyforms.edu.service.user.StudentService;
 
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-/** Сервисные пользователи (админы) — только ADMIN (JWT). */
+/** Клиенты курса (доступ к платформе) — только ADMIN (JWT). */
 @AllArgsConstructor
 @RestController
-@RequestMapping("/api/admin/service-users")
-@Tag(name = "ServiceUsers", description = "Email'ы сервисных пользователей. Только роль ADMIN")
+@RequestMapping("/api/admin/students")
+@Tag(name = "Students", description = "Email'ы клиентов с доступом к курсу. Только роль ADMIN")
 @SecurityRequirement(name = "Bearer")
-public class ServiceUserController {
+public class StudentController {
 
-    private final ServiceUserService serviceUserService;
+    private final StudentService studentService;
 
-    public record ServiceUserDTO(String id, String email, String role, Boolean active) {
-        static ServiceUserDTO from(ServiceUser u) {
-            return new ServiceUserDTO(u.getId().toString(), u.getEmail(), u.getRole(), u.getActive());
+    @Data
+    @NoArgsConstructor
+    @lombok.AllArgsConstructor
+    @Builder
+    public static class StudentRequestDTO {
+        @NotBlank(message = "Не указан email")
+        @Email(message = "Некорректный email")
+        private String email;
+    }
+
+    public record StudentDTO(String id, String email, Boolean active) {
+        static StudentDTO from(Student s) {
+            return new StudentDTO(s.getId().toString(), s.getEmail(), s.getActive());
         }
     }
 
-    @Operation(summary = "Все сервисные пользователи")
+    @Operation(summary = "Все клиенты")
     @GetMapping
-    public ResponseEntity<List<ServiceUserDTO>> getAll() {
-        return ResponseEntity.ok(serviceUserService.getAll().stream().map(ServiceUserDTO::from).toList());
+    public ResponseEntity<List<StudentDTO>> getAll() {
+        return ResponseEntity.ok(studentService.getAll().stream().map(StudentDTO::from).toList());
     }
 
-    @Operation(summary = "Добавить сервисного пользователя")
+    @Operation(summary = "Дать клиенту доступ к курсу")
     @PostMapping
-    public ResponseEntity<ServiceUserDTO> create(@Valid @RequestBody ServiceUserRequestDTO request) {
+    public ResponseEntity<StudentDTO> create(@Valid @RequestBody StudentRequestDTO request) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ServiceUserDTO.from(serviceUserService.create(request)));
+                .body(StudentDTO.from(studentService.create(request.getEmail())));
     }
 
-    @Operation(summary = "Удалить сервисного пользователя")
+    @Operation(summary = "Отозвать доступ")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
-        serviceUserService.delete(id);
+        studentService.delete(id);
         return ResponseEntity.noContent().build();
     }
 

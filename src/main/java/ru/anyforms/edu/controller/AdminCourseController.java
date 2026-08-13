@@ -1,6 +1,7 @@
 package ru.anyforms.edu.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -22,11 +23,12 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-/** Админка курса. TODO: закрыть ролью ADMIN после появления email-логина. */
+/** Админка курса — только ADMIN (JWT). */
 @AllArgsConstructor
 @RestController
 @RequestMapping("/api/admin")
-@Tag(name = "Admin", description = "Настройка курса: модули, уроки, файлы")
+@Tag(name = "Admin", description = "Настройка курса: модули, уроки, файлы. Только роль ADMIN")
+@SecurityRequirement(name = "Bearer")
 public class AdminCourseController {
 
     private final CourseService courseService;
