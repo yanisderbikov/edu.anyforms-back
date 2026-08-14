@@ -20,10 +20,6 @@ public record CourseResponseDTO(
             int order,
             String title,
             String description,
-            List<String> points,
-            String image,
-            /** Сырое значение из БД (ключ S3 или URL) — только в админском ответе */
-            String imageKey,
             String status,
             String opensAt,
             List<LessonDTO> lessons

@@ -8,7 +8,6 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -40,14 +39,6 @@ public class CourseModule {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    /** Пункты «что внутри» — по одному на строку (см. V1-миграцию) */
-    @Column(columnDefinition = "TEXT")
-    private String points;
-
-    /** Ключ картинки в S3 или полный URL */
-    @Column(name = "image_url", columnDefinition = "TEXT")
-    private String imageUrl;
-
     /** NULL = открыт; будущая дата = «Откроется N числа» */
     @Column(name = "opens_at")
     private LocalDate opensAt;
@@ -67,13 +58,5 @@ public class CourseModule {
 
     public boolean isOpen() {
         return opensAt == null || !opensAt.isAfter(LocalDate.now());
-    }
-
-    public List<String> pointsList() {
-        if (points == null || points.isBlank()) return List.of();
-        return Arrays.stream(points.split("\n"))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .toList();
     }
 }

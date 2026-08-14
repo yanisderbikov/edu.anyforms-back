@@ -8,7 +8,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
-import java.util.List;
 
 /** Создание/обновление модуля из админки. */
 @Data
@@ -24,12 +23,6 @@ public class ModuleRequestDTO {
     private String title;
 
     private String description;
-
-    /** Пункты «что внутри» для онбординга */
-    private List<String> points;
-
-    /** Ключ картинки в S3 или полный URL */
-    private String imageUrl;
 
     /** null = модуль открыт */
     private LocalDate opensAt;

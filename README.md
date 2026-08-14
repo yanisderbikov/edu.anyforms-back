@@ -29,11 +29,14 @@ java -jar target/edu-anyforms-back-1.0-SNAPSHOT.jar
   - Шаблон письма: `resources/templates/email-login-code.html` (тёмный дизайн курса).
 - **API курса** — `GET /api/course` (требуется JWT, любая роль): курс + модули + уроки одним JSON.
   Уроки закрытых модулей наружу не отдаются.
-- **Админка (API)** — `/api/admin/**`, только роль ADMIN. В Swagger — кнопка Authorize (Bearer JWT):
+- **API онбординга** — `GET /api/onboarding` (JWT): слайды знакомства. Независим от модулей курса.
+- **Админка (API)** — `/api/admin/**`, только роль ADMIN. Полное описание с примерами — в [API.md](API.md).
+  В Swagger — кнопка Authorize (Bearer JWT):
   - `GET /api/admin/course` — всё, включая закрытые модули
   - `PUT /api/admin/course` — шапка курса и ссылки поддержки
   - `POST/PUT/DELETE /api/admin/modules[/{id}]` — модули (points — списком, opensAt: null = открыт)
   - `POST /api/admin/modules/{id}/lessons`, `PUT/DELETE /api/admin/lessons/{id}` — уроки
+  - `GET /api/admin/onboarding`, `POST/PUT/DELETE .../slides[/{id}]` — слайды онбординга
   - `GET/POST/DELETE /api/admin/service-users` — email'ы админов
   - `GET/POST/DELETE /api/admin/students` — email'ы клиентов (выдача/отзыв доступа к курсу)
 

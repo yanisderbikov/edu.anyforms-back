@@ -64,9 +64,6 @@ class CourseServiceImpl implements CourseService {
                 module.getOrd(),
                 module.getTitle(),
                 module.getDescription(),
-                module.pointsList(),
-                s3FileStorage.resolveUrl(module.getImageUrl()),
-                admin ? module.getImageUrl() : null,
                 open ? "open" : "locked",
                 module.getOpensAt() == null ? null : module.getOpensAt().toString(),
                 lessons

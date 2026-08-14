@@ -9,6 +9,7 @@ import ru.anyforms.edu.model.course.Lesson;
 import ru.anyforms.edu.repository.GetterCourse;
 import ru.anyforms.edu.repository.SaverCourse;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -47,6 +48,46 @@ class CourseManager implements GetterCourse, SaverCourse {
             return lessonRepo.findById(id);
         } catch (Exception e) {
             log.error("getLessonById failed", e);
+            throw new RuntimeException("Database exception", e);
+        }
+    }
+
+    @Override
+    public List<CourseModule> getModules(UUID courseId) {
+        try {
+            return moduleRepo.findByCourseIdOrderByOrdAsc(courseId);
+        } catch (Exception e) {
+            log.error("getModules failed", e);
+            throw new RuntimeException("Database exception", e);
+        }
+    }
+
+    @Override
+    public List<Lesson> getLessons(UUID moduleId) {
+        try {
+            return lessonRepo.findByModuleIdOrderByOrdAsc(moduleId);
+        } catch (Exception e) {
+            log.error("getLessons failed", e);
+            throw new RuntimeException("Database exception", e);
+        }
+    }
+
+    @Override
+    public List<CourseModule> saveModules(List<CourseModule> modules) {
+        try {
+            return moduleRepo.saveAll(modules);
+        } catch (Exception e) {
+            log.error("saveModules failed", e);
+            throw new RuntimeException("Database exception", e);
+        }
+    }
+
+    @Override
+    public List<Lesson> saveLessons(List<Lesson> lessons) {
+        try {
+            return lessonRepo.saveAll(lessons);
+        } catch (Exception e) {
+            log.error("saveLessons failed", e);
             throw new RuntimeException("Database exception", e);
         }
     }
