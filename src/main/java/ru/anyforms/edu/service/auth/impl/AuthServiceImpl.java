@@ -6,6 +6,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import ru.anyforms.edu.dto.auth.AuthResponseDTO;
+import ru.anyforms.edu.integration.CourseAccessClient;
 import ru.anyforms.edu.model.Role;
 import ru.anyforms.edu.model.user.LoginCode;
 import ru.anyforms.edu.model.user.ServiceUser;
@@ -40,11 +42,17 @@ class AuthServiceImpl implements AuthService {
     private final LoginCodeStore loginCodeStore;
     private final EmailService emailService;
     private final JwtTokenService jwtTokenService;
+    private final CourseAccessClient courseAccessClient;
+
+    private boolean isAdmin(String email) {
+        return getterServiceUser.getByEmail(email)
+                .map(u -> Boolean.TRUE.equals(u.getActive()))
+                .orElse(false);
+    }
 
     /** ADMIN приоритетнее: если email есть и там и там, входит как админ. */
     private Role resolveRole(String email) {
-        var admin = getterServiceUser.getByEmail(email);
-        if (admin.isPresent() && Boolean.TRUE.equals(admin.get().getActive())) {
+        if (isAdmin(email)) {
             return Role.ADMIN;
         }
         var student = getterStudent.getByEmail(email);
@@ -54,13 +62,50 @@ class AuthServiceImpl implements AuthService {
         return null;
     }
 
+    /**
+     * Доступ клиента подтверждает anyforms-5: там лежат оплаченные покупки курса.
+     * Ответ сохраняем у себя — и как право входа, и как тариф (SELF / PERSONAL).
+     * Если сервис не ответил, пускаем тех, кто уже заходил раньше или добавлен админом.
+     */
+    private void syncStudentAccess(String email) {
+        CourseAccessClient.CourseAccess access;
+        try {
+            access = courseAccessClient.check(email);
+        } catch (CourseAccessClient.CourseAccessUnavailableException e) {
+            if (getterStudent.getByEmail(email).map(s -> Boolean.TRUE.equals(s.getActive())).orElse(false)) {
+                log.warn("anyforms-5 недоступен, пускаем {} по ранее выданному доступу", email);
+                return;
+            }
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                    "Не получилось проверить доступ. Попробуйте через минуту или напишите в поддержку.");
+        }
+
+        Student student = getterStudent.getByEmail(email).orElse(null);
+
+        if (!access.hasAccess()) {
+            // Доступ, выданный админом вручную, покупкой не управляется
+            if (student != null && Boolean.TRUE.equals(student.getActive())) {
+                return;
+            }
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "У этого e-mail нет доступа к курсу. Проверьте адрес или напишите в поддержку.");
+        }
+
+        if (student == null) {
+            student = Student.builder().email(email).build();
+        }
+        student.setPlan(access.plan());
+        student.setActive(Boolean.TRUE);
+        saverStudent.save(student);
+    }
+
     @Override
     @Transactional
     public void requestCode(String rawEmail) {
         String email = ServiceUser.normalizeEmail(rawEmail);
-        if (resolveRole(email) == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "У этого e-mail нет доступа к курсу. Проверьте адрес или напишите в поддержку.");
+        // Админов в anyforms-5 не проверяем — у них доступ по своей таблице
+        if (!isAdmin(email)) {
+            syncStudentAccess(email);
         }
 
         var existing = loginCodeStore.getLatestActive(email);
@@ -85,7 +130,7 @@ class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public AuthResult verify(String rawEmail, String rawCode) {
+    public AuthResponseDTO verify(String rawEmail, String rawCode) {
         String email = ServiceUser.normalizeEmail(rawEmail);
         String code = rawCode == null ? "" : rawCode.trim();
 
@@ -124,6 +169,6 @@ class AuthServiceImpl implements AuthService {
         }
 
         String token = jwtTokenService.createToken(email, role, sessionId);
-        return new AuthResult(token, role.name(), email);
+        return new AuthResponseDTO(token, role.name(), email);
     }
 }

@@ -5,28 +5,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import ru.anyforms.edu.model.user.ServiceUser;
 import ru.anyforms.edu.repository.GetterServiceUser;
-import ru.anyforms.edu.repository.SaverServiceUser;
 
-import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
+/** Админы платформы заводятся вручную в базе, отсюда только чтение. */
 @Component
 @AllArgsConstructor
 @Slf4j
-class ServiceUserManager implements GetterServiceUser, SaverServiceUser {
+class ServiceUserManager implements GetterServiceUser {
 
     private final ServiceUserRepo serviceUserRepo;
-
-    @Override
-    public List<ServiceUser> getAll() {
-        try {
-            return serviceUserRepo.findAll();
-        } catch (Exception e) {
-            log.error("getAll failed", e);
-            throw new RuntimeException("Database exception", e);
-        }
-    }
 
     @Override
     public Optional<ServiceUser> getByEmail(String email) {
@@ -34,36 +22,6 @@ class ServiceUserManager implements GetterServiceUser, SaverServiceUser {
             return serviceUserRepo.findByEmail(ServiceUser.normalizeEmail(email));
         } catch (Exception e) {
             log.error("getByEmail failed", e);
-            throw new RuntimeException("Database exception", e);
-        }
-    }
-
-    @Override
-    public Optional<ServiceUser> getById(UUID id) {
-        try {
-            return serviceUserRepo.findById(id);
-        } catch (Exception e) {
-            log.error("getById failed", e);
-            throw new RuntimeException("Database exception", e);
-        }
-    }
-
-    @Override
-    public ServiceUser save(ServiceUser user) {
-        try {
-            return serviceUserRepo.save(user);
-        } catch (Exception e) {
-            log.error("save failed", e);
-            throw new RuntimeException("Database exception", e);
-        }
-    }
-
-    @Override
-    public void delete(ServiceUser user) {
-        try {
-            serviceUserRepo.delete(user);
-        } catch (Exception e) {
-            log.error("delete failed", e);
             throw new RuntimeException("Database exception", e);
         }
     }

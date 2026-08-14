@@ -7,16 +7,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/** Добавление сервисного пользователя (админа). */
+/** Выдача клиенту доступа к курсу вручную. */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ServiceUserRequestDTO {
+public class StudentRequestDTO {
 
     @NotBlank(message = "Не указан email")
     @Email(message = "Некорректный email")
     private String email;
-
-    private String role;
 }

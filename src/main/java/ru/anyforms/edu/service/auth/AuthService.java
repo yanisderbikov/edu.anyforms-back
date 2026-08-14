@@ -1,13 +1,12 @@
 package ru.anyforms.edu.service.auth;
 
-public interface AuthService {
+import ru.anyforms.edu.dto.auth.AuthResponseDTO;
 
-    record AuthResult(String token, String role, String email) {
-    }
+public interface AuthService {
 
     /** Отправляет код входа на почту (если email имеет доступ к платформе). */
     void requestCode(String email);
 
     /** Проверяет код и выдаёт JWT. Для STUDENT новый вход гасит старые токены. */
-    AuthResult verify(String email, String code);
+    AuthResponseDTO verify(String email, String code);
 }

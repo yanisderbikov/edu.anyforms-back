@@ -2,7 +2,7 @@ package ru.anyforms.edu.dto.course;
 
 import java.util.List;
 
-/** Полный ответ /api/public/course — ровно тот JSON, который ждёт фронтенд. */
+/** Полный ответ /api/course — ровно тот JSON, который ждёт фронтенд. */
 public record CourseResponseDTO(
         CourseDTO course,
         SupportDTO support,

@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import ru.anyforms.edu.dto.admin.StudentDTO;
+import ru.anyforms.edu.dto.admin.StudentRequestDTO;
 import ru.anyforms.edu.model.user.ServiceUser;
 import ru.anyforms.edu.model.user.Student;
 import ru.anyforms.edu.repository.GetterStudent;
@@ -20,18 +22,23 @@ class StudentServiceImpl implements StudentService {
     private final GetterStudent getterStudent;
     private final SaverStudent saverStudent;
 
-    @Override
-    public List<Student> getAll() {
-        return getterStudent.getAll();
+    private static StudentDTO toDTO(Student student) {
+        return new StudentDTO(student.getId().toString(), student.getEmail(), student.getActive(),
+                student.getPlan());
     }
 
     @Override
-    public Student create(String rawEmail) {
-        String email = ServiceUser.normalizeEmail(rawEmail);
+    public List<StudentDTO> getAll() {
+        return getterStudent.getAll().stream().map(StudentServiceImpl::toDTO).toList();
+    }
+
+    @Override
+    public StudentDTO create(StudentRequestDTO request) {
+        String email = ServiceUser.normalizeEmail(request.getEmail());
         if (getterStudent.getByEmail(email).isPresent()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Клиент уже существует: " + email);
         }
-        return saverStudent.save(Student.builder().email(email).build());
+        return toDTO(saverStudent.save(Student.builder().email(email).build()));
     }
 
     @Override

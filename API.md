@@ -1,7 +1,7 @@
 # API учебной платформы
 
 Все админские ручки требуют заголовок `Authorization: Bearer <JWT>` с ролью `ADMIN`.
-Токен берётся из `POST /api/public/auth/verify`. Ошибки всегда возвращаются как `{"message": "текст"}`.
+Токен берётся из `POST /api/auth/verify`. Ошибки всегда возвращаются как `{"message": "текст"}`.
 
 **Курс и онбординг независимы.** Модули (`/admin/course`) — это то, что студент проходит:
 названия, описания, даты открытия и уроки с видео. Онбординг (`/admin/onboarding`) — набор
@@ -11,13 +11,26 @@
 
 ## 1. Вход
 
-### `POST /api/public/auth/request-code`
+### `POST /api/auth/request-code`
 ```json
 { "email": "viaduct-mummy.0f@icloud.com" }
 ```
 Ответ `200`: `{ "message": "Код отправлен на почту" }`
 
-### `POST /api/public/auth/verify`
+Перед отправкой кода клиент проверяется в anyforms-5:
+
+```
+GET https://anyforms.ru/api/tech/course-access?email=client@mail.ru
+X-Auth-Token: <общий межсервисный токен>
+
+200 { "hasAccess": true, "plan": "PERSONAL", "productCode": "COURSE_PERSONAL" }
+```
+
+`plan` (`SELF` / `PERSONAL`) сохраняется в `student.plan`, запись клиента создаётся сама.
+Возможные ответы: `404` — покупки нет, `503` — anyforms-5 не ответил и раньше клиент не заходил.
+Админы из `service_user` эту проверку не проходят.
+
+### `POST /api/auth/verify`
 ```json
 { "email": "viaduct-mummy.0f@icloud.com", "code": "482915" }
 ```
@@ -215,8 +228,11 @@
 
 ## 5. Доступы
 
-### Админы — `/api/admin/service-users`
-`GET` → массив, `POST` `{ "email": "kolya@anyforms.ru", "role": "ADMIN" }` → `201`, `DELETE /{id}` → `204`.
+Админы платформы (`service_user`) заводятся вручную в базе — API для них нет:
+
+```sql
+INSERT INTO service_user (id, email, role) VALUES (gen_random_uuid(), 'kolya@anyforms.ru', 'ADMIN');
+```
 
 ### Клиенты — `/api/admin/students`
 `GET` → массив, `POST` `{ "email": "client@mail.ru" }` → `201`, `DELETE /{id}` → `204`.
