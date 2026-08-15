@@ -87,7 +87,7 @@ class OnboardingServiceImpl implements OnboardingService {
                 .ord(request.getOrder())
                 .kind(normalizeKind(request.getKind()))
                 .eyebrow(request.getEyebrow())
-                .title(request.getTitle())
+                .title(request.getTitle() == null ? "" : request.getTitle())
                 .body(request.getBody())
                 .points(joinPoints(request.getPoints()))
                 .imageUrl(request.getImageUrl())
@@ -103,7 +103,7 @@ class OnboardingServiceImpl implements OnboardingService {
         slide.setOrd(request.getOrder());
         slide.setKind(normalizeKind(request.getKind()));
         slide.setEyebrow(request.getEyebrow());
-        slide.setTitle(request.getTitle());
+        slide.setTitle(request.getTitle() == null ? "" : request.getTitle());
         slide.setBody(request.getBody());
         slide.setPoints(joinPoints(request.getPoints()));
         slide.setImageUrl(request.getImageUrl());

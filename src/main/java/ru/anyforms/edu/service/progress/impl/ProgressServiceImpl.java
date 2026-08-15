@@ -39,36 +39,41 @@ class ProgressServiceImpl implements ProgressService {
         if (admin) {
             return new ProgressDTO(true, List.of());
         }
-        Student student = requireStudent(email);
-        List<String> completed = progressStore.getCompletedLessonIds(student.getId()).stream()
-                .map(UUID::toString)
-                .toList();
-        return new ProgressDTO(student.getOnboardingDoneAt() != null, completed);
+        return toDTO(requireStudent(email));
     }
 
     @Override
     @Transactional
-    public void finishOnboarding(String email, boolean admin) {
+    public ProgressDTO finishOnboarding(String email, boolean admin) {
         if (admin) {
-            return;
+            return getProgress(email, true);
         }
         Student student = requireStudent(email);
         if (student.getOnboardingDoneAt() == null) {
             student.setOnboardingDoneAt(Instant.now());
             saverStudent.save(student);
         }
+        return toDTO(student);
     }
 
     @Override
     @Transactional
-    public void completeLesson(String email, boolean admin, UUID lessonId) {
+    public ProgressDTO completeLesson(String email, boolean admin, UUID lessonId) {
         if (admin) {
-            return;
+            return getProgress(email, true);
         }
         Student student = requireStudent(email);
         getterCourse.getLessonById(lessonId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Урок не найден: " + lessonId));
         progressStore.markCompleted(student.getId(), lessonId);
+        return toDTO(student);
+    }
+
+    private ProgressDTO toDTO(Student student) {
+        List<String> completed = progressStore.getCompletedLessonIds(student.getId()).stream()
+                .map(UUID::toString)
+                .toList();
+        return new ProgressDTO(student.getOnboardingDoneAt() != null, completed);
     }
 }

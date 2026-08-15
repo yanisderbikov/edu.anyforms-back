@@ -8,7 +8,8 @@ public interface ProgressService {
 
     ProgressDTO getProgress(String email, boolean admin);
 
-    void finishOnboarding(String email, boolean admin);
+    /** Возвращает актуальный прогресс, чтобы клиенту не нужен был повторный GET */
+    ProgressDTO finishOnboarding(String email, boolean admin);
 
-    void completeLesson(String email, boolean admin, UUID lessonId);
+    ProgressDTO completeLesson(String email, boolean admin, UUID lessonId);
 }

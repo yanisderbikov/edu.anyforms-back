@@ -38,18 +38,18 @@ public class MeController {
         return ResponseEntity.ok(progressService.getProgress(auth.getName(), isAdmin(auth)));
     }
 
-    @Operation(summary = "Онбординг пройден")
+    @Operation(summary = "Онбординг пройден",
+            description = "Возвращает актуальный прогресс — повторный GET не нужен")
     @PostMapping("/onboarding-done")
-    public ResponseEntity<Void> finishOnboarding(Authentication auth) {
-        progressService.finishOnboarding(auth.getName(), isAdmin(auth));
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<ProgressDTO> finishOnboarding(Authentication auth) {
+        return ResponseEntity.ok(progressService.finishOnboarding(auth.getName(), isAdmin(auth)));
     }
 
-    @Operation(summary = "Урок просмотрен полностью", description = "Идемпотентно: повторный вызов — не ошибка")
+    @Operation(summary = "Урок просмотрен полностью",
+            description = "Идемпотентно: повторный вызов — не ошибка. Возвращает актуальный прогресс")
     @PostMapping("/lessons/{lessonId}/complete")
-    public ResponseEntity<Void> completeLesson(Authentication auth, @PathVariable UUID lessonId) {
-        progressService.completeLesson(auth.getName(), isAdmin(auth), lessonId);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<ProgressDTO> completeLesson(Authentication auth, @PathVariable UUID lessonId) {
+        return ResponseEntity.ok(progressService.completeLesson(auth.getName(), isAdmin(auth), lessonId));
     }
 
     @ExceptionHandler(ResponseStatusException.class)
