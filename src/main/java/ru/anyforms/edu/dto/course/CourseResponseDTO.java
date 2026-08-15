@@ -20,6 +20,10 @@ public record CourseResponseDTO(
             int order,
             String title,
             String description,
+            /** Подписанная ссылка на картинку карточки (16:9) */
+            String image,
+            /** Сырое значение из БД — только в админском ответе */
+            String imageKey,
             String status,
             String opensAt,
             List<LessonDTO> lessons

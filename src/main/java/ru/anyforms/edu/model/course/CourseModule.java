@@ -39,6 +39,10 @@ public class CourseModule {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    /** Картинка карточки (16:9): ключ S3 или полный URL */
+    @Column(name = "image_url", columnDefinition = "TEXT")
+    private String imageUrl;
+
     /** NULL = открыт; будущая дата = «Откроется N числа» */
     @Column(name = "opens_at")
     private LocalDate opensAt;

@@ -62,6 +62,7 @@ class AdminCourseServiceImpl implements AdminCourseService {
                 .ord(request.getOrder())
                 .title(request.getTitle())
                 .description(request.getDescription())
+                .imageUrl(request.getImageUrl())
                 .opensAt(request.getOpensAt())
                 .build());
         resequenceModules(course.getId(), module.getId());
@@ -75,6 +76,7 @@ class AdminCourseServiceImpl implements AdminCourseService {
         module.setOrd(request.getOrder());
         module.setTitle(request.getTitle());
         module.setDescription(request.getDescription());
+        module.setImageUrl(request.getImageUrl());
         module.setOpensAt(request.getOpensAt());
         saverCourse.saveModule(module);
         resequenceModules(module.getCourse().getId(), moduleId);
@@ -95,7 +97,7 @@ class AdminCourseServiceImpl implements AdminCourseService {
         Lesson lesson = saverCourse.saveLesson(Lesson.builder()
                 .module(requireModule(moduleId))
                 .ord(request.getOrder())
-                .title(request.getTitle())
+                .title(request.getTitle() == null ? "" : request.getTitle())
                 .description(request.getDescription())
                 .videoUrl(request.getVideoUrl())
                 .build());
@@ -108,7 +110,7 @@ class AdminCourseServiceImpl implements AdminCourseService {
     public void updateLesson(UUID lessonId, LessonRequestDTO request) {
         Lesson lesson = requireLesson(lessonId);
         lesson.setOrd(request.getOrder());
-        lesson.setTitle(request.getTitle());
+        lesson.setTitle(request.getTitle() == null ? "" : request.getTitle());
         lesson.setDescription(request.getDescription());
         lesson.setVideoUrl(request.getVideoUrl());
         saverCourse.saveLesson(lesson);

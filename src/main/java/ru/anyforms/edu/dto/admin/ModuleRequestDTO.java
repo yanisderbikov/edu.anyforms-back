@@ -24,6 +24,9 @@ public class ModuleRequestDTO {
 
     private String description;
 
+    /** Картинка карточки (16:9): ключ S3 или полный URL */
+    private String imageUrl;
+
     /** null = модуль открыт */
     private LocalDate opensAt;
 }
