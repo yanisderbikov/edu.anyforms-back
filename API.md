@@ -74,7 +74,9 @@ X-Auth-Token: <общий межсервисный токен>
           "title": "Знакомство с Blender",
           "description": "Разбираемся в интерфейсе",
           "videoUrl": "https://edu-anyforms.storage.yandexcloud.net/videos/abc.mp4?X-Amz-Signature=...",
-          "videoKey": "videos/abc12345-1111-2222-3333-444455556666.mp4"
+          "videoKey": "videos/abc12345-1111-2222-3333-444455556666.mp4",
+          "cover": "https://edu-anyforms.storage.yandexcloud.net/lessons/abc.jpg?X-Amz-Signature=...",
+          "coverKey": "lessons/abc12345-1111-2222-3333-444455556666.jpg"
         }
       ]
     }
@@ -83,7 +85,7 @@ X-Auth-Token: <общий межсервисный токен>
 ```
 
 ### `GET /api/course` — то, что видит студент
-Требует JWT любой роли. У закрытых модулей `lessons` пустой, `videoKey` всегда `null`.
+Требует JWT любой роли. У закрытых модулей `lessons` пустой, `videoKey` и `coverKey` всегда `null`.
 
 ### `PUT /api/admin/course` — шапка курса
 ```json
@@ -129,9 +131,18 @@ X-Auth-Token: <общий межсервисный токен>
   "order": 1,
   "title": "Знакомство с Blender",
   "description": "Разбираемся в интерфейсе и готовим рабочее место",
-  "videoUrl": "videos/abc12345-1111-2222-3333-444455556666.mp4"
+  "videoUrl": "videos/abc12345-1111-2222-3333-444455556666.mp4",
+  "coverUrl": "lessons/abc12345-1111-2222-3333-444455556666.jpg"
 }
 ```
+
+| Поле | Тип | Обязательно | Смысл |
+|---|---|---|---|
+| `order` | число | да | Порядок; после сохранения список перенумеровывается |
+| `title` | строка | нет | Новый урок создаётся без названия и заполняется после |
+| `description` | строка | нет | Текст под видео |
+| `videoUrl` | строка | нет | Ключ в бакете или полный URL |
+| `coverUrl` | строка | нет | Обложка 16:9 — превью видео до запуска; ключ или полный URL |
 
 ---
 
@@ -237,8 +248,8 @@ X-Auth-Token: <общий межсервисный токен>
 }
 ```
 Браузер делает `PUT uploadUrl` с телом файла и заголовком `Content-Type`, совпадающим с `contentType`
-(он входит в подпись). Ссылка живёт 30 минут. Полученный `key` кладём в `videoUrl` урока
-или `imageUrl` слайда. `prefix` — папка в бакете: `videos`, `onboarding`.
+(он входит в подпись). Ссылка живёт 30 минут. Полученный `key` кладём в `videoUrl` или
+`coverUrl` урока, `imageUrl` слайда. `prefix` — папка в бакете: `videos`, `lessons`, `onboarding`.
 
 ---
 
@@ -265,7 +276,8 @@ INSERT INTO service_user (id, email, role) VALUES (gen_random_uuid(), 'kolya@any
 2. **Порядок — просто число.** Поставили уроку `1` — он встанет первым, соседи подвинутся.
    После каждого сохранения сервер перенумеровывает список в 1, 2, 3…, поэтому дырок
    и конфликтов не бывает. Так же работают модули и слайды онбординга.
-3. **Читаем `videoUrl`/`image`, пишем `videoUrl`/`imageUrl` из `videoKey`/`imageKey`.**
-   В ответе `videoUrl` и `image` — подписанные ссылки на час (для плеера и превью),
-   а сохранять нужно «сырое» значение из `videoKey` / `imageKey`.
+3. **Читаем `videoUrl`/`cover`/`image`, пишем `videoUrl`/`coverUrl`/`imageUrl` из
+   `videoKey`/`coverKey`/`imageKey`.** В ответе `videoUrl`, `cover` и `image` — подписанные
+   ссылки на час (для плеера и превью), а сохранять нужно «сырое» значение из
+   `videoKey` / `coverKey` / `imageKey`.
 4. **`status` считается на лету** из `opensAt` — отправлять его не нужно.

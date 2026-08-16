@@ -40,6 +40,10 @@ public class Lesson {
     @Column(name = "video_url", columnDefinition = "TEXT")
     private String videoUrl;
 
+    /** Обложка урока (16:9): ключ S3 или полный URL */
+    @Column(name = "cover_url", columnDefinition = "TEXT")
+    private String coverUrl;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

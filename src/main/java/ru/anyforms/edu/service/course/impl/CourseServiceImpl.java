@@ -78,7 +78,9 @@ class CourseServiceImpl implements CourseService {
                 lesson.getTitle(),
                 lesson.getDescription(),
                 s3FileStorage.resolveUrl(lesson.getVideoUrl()),
-                admin ? lesson.getVideoUrl() : null
+                admin ? lesson.getVideoUrl() : null,
+                s3FileStorage.resolveUrl(lesson.getCoverUrl()),
+                admin ? lesson.getCoverUrl() : null
         );
     }
 }

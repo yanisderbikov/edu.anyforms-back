@@ -36,7 +36,11 @@ public record CourseResponseDTO(
             String description,
             String videoUrl,
             /** Сырое значение из БД — только в админском ответе */
-            String videoKey
+            String videoKey,
+            /** Подписанная ссылка на обложку урока (16:9) */
+            String cover,
+            /** Сырое значение из БД — только в админском ответе */
+            String coverKey
     ) {
     }
 }

@@ -100,6 +100,7 @@ class AdminCourseServiceImpl implements AdminCourseService {
                 .title(request.getTitle() == null ? "" : request.getTitle())
                 .description(request.getDescription())
                 .videoUrl(request.getVideoUrl())
+                .coverUrl(request.getCoverUrl())
                 .build());
         resequenceLessons(moduleId, lesson.getId());
         return lesson.getId();
@@ -113,6 +114,7 @@ class AdminCourseServiceImpl implements AdminCourseService {
         lesson.setTitle(request.getTitle() == null ? "" : request.getTitle());
         lesson.setDescription(request.getDescription());
         lesson.setVideoUrl(request.getVideoUrl());
+        lesson.setCoverUrl(request.getCoverUrl());
         saverCourse.saveLesson(lesson);
         resequenceLessons(lesson.getModule().getId(), lessonId);
     }

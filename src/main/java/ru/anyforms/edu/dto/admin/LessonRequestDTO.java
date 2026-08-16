@@ -23,4 +23,7 @@ public class LessonRequestDTO {
 
     /** Ключ видео в S3 или полный URL */
     private String videoUrl;
+
+    /** Обложка урока (16:9): ключ S3 или полный URL */
+    private String coverUrl;
 }
