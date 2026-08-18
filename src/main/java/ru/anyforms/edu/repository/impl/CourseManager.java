@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import ru.anyforms.edu.model.course.Course;
 import ru.anyforms.edu.model.course.CourseModule;
 import ru.anyforms.edu.model.course.Lesson;
+import ru.anyforms.edu.model.course.LessonFile;
 import ru.anyforms.edu.repository.GetterCourse;
 import ru.anyforms.edu.repository.SaverCourse;
 
@@ -21,6 +22,7 @@ class CourseManager implements GetterCourse, SaverCourse {
     private final CourseRepo courseRepo;
     private final CourseModuleRepo moduleRepo;
     private final LessonRepo lessonRepo;
+    private final LessonFileRepo fileRepo;
 
     @Override
     public Optional<Course> getBySlug(String slug) {
@@ -48,6 +50,16 @@ class CourseManager implements GetterCourse, SaverCourse {
             return lessonRepo.findById(id);
         } catch (Exception e) {
             log.error("getLessonById failed", e);
+            throw new RuntimeException("Database exception", e);
+        }
+    }
+
+    @Override
+    public Optional<LessonFile> getFileById(UUID id) {
+        try {
+            return fileRepo.findById(id);
+        } catch (Exception e) {
+            log.error("getFileById failed", e);
             throw new RuntimeException("Database exception", e);
         }
     }
@@ -118,6 +130,26 @@ class CourseManager implements GetterCourse, SaverCourse {
             return lessonRepo.save(lesson);
         } catch (Exception e) {
             log.error("saveLesson failed", e);
+            throw new RuntimeException("Database exception", e);
+        }
+    }
+
+    @Override
+    public LessonFile saveFile(LessonFile file) {
+        try {
+            return fileRepo.save(file);
+        } catch (Exception e) {
+            log.error("saveFile failed", e);
+            throw new RuntimeException("Database exception", e);
+        }
+    }
+
+    @Override
+    public void deleteFile(LessonFile file) {
+        try {
+            fileRepo.delete(file);
+        } catch (Exception e) {
+            log.error("deleteFile failed", e);
             throw new RuntimeException("Database exception", e);
         }
     }

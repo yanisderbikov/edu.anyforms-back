@@ -40,7 +40,20 @@ public record CourseResponseDTO(
             /** Подписанная ссылка на обложку урока (16:9) */
             String cover,
             /** Сырое значение из БД — только в админском ответе */
-            String coverKey
+            String coverKey,
+            /** Файлы-материалы урока в порядке добавления */
+            List<LessonFileDTO> files
+    ) {
+    }
+
+    public record LessonFileDTO(
+            String id,
+            /** Имя, под которым файл скачается */
+            String name,
+            /** Подписанная ссылка на скачивание */
+            String url,
+            /** Размер в байтах, может быть null */
+            Long sizeBytes
     ) {
     }
 }

@@ -11,6 +11,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import ru.anyforms.edu.dto.admin.CourseRequestDTO;
+import ru.anyforms.edu.dto.admin.LessonFileRequestDTO;
 import ru.anyforms.edu.dto.admin.LessonRequestDTO;
 import ru.anyforms.edu.dto.admin.ModuleRequestDTO;
 import ru.anyforms.edu.dto.admin.PresignUploadRequestDTO;
@@ -90,6 +91,23 @@ public class AdminCourseController {
     @DeleteMapping("/lessons/{lessonId}")
     public ResponseEntity<Void> deleteLesson(@PathVariable UUID lessonId) {
         adminCourseService.deleteLesson(lessonId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Прикрепить файл к уроку",
+            description = "Сам файл уже в S3 (см. presign-upload) — здесь сохраняем ключ, имя и размер. "
+                    + "Количество файлов у урока не ограничено")
+    @PostMapping("/lessons/{lessonId}/files")
+    public ResponseEntity<Map<String, String>> addLessonFile(@PathVariable UUID lessonId,
+                                                             @Valid @RequestBody LessonFileRequestDTO request) {
+        UUID id = adminCourseService.addLessonFile(lessonId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("id", id.toString()));
+    }
+
+    @Operation(summary = "Открепить файл от урока")
+    @DeleteMapping("/files/{fileId}")
+    public ResponseEntity<Void> deleteLessonFile(@PathVariable UUID fileId) {
+        adminCourseService.deleteLessonFile(fileId);
         return ResponseEntity.noContent().build();
     }
 

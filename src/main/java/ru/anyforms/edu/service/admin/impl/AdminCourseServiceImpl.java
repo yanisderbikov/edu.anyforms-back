@@ -6,11 +6,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import ru.anyforms.edu.dto.admin.CourseRequestDTO;
+import ru.anyforms.edu.dto.admin.LessonFileRequestDTO;
 import ru.anyforms.edu.dto.admin.LessonRequestDTO;
 import ru.anyforms.edu.dto.admin.ModuleRequestDTO;
 import ru.anyforms.edu.model.course.Course;
 import ru.anyforms.edu.model.course.CourseModule;
 import ru.anyforms.edu.model.course.Lesson;
+import ru.anyforms.edu.model.course.LessonFile;
 import ru.anyforms.edu.repository.GetterCourse;
 import ru.anyforms.edu.repository.SaverCourse;
 import ru.anyforms.edu.service.admin.AdminCourseService;
@@ -126,6 +128,26 @@ class AdminCourseServiceImpl implements AdminCourseService {
         UUID moduleId = lesson.getModule().getId();
         saverCourse.deleteLesson(lesson);
         resequenceLessons(moduleId, null);
+    }
+
+    @Override
+    @Transactional
+    public UUID addLessonFile(UUID lessonId, LessonFileRequestDTO request) {
+        LessonFile file = saverCourse.saveFile(LessonFile.builder()
+                .lesson(requireLesson(lessonId))
+                .name(request.getName())
+                .fileUrl(request.getFileUrl())
+                .sizeBytes(request.getSizeBytes())
+                .build());
+        return file.getId();
+    }
+
+    @Override
+    @Transactional
+    public void deleteLessonFile(UUID fileId) {
+        LessonFile file = getterCourse.getFileById(fileId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Файл не найден: " + fileId));
+        saverCourse.deleteFile(file);
     }
 
     /** Модули выстраиваются подряд: 1, 2, 3… */

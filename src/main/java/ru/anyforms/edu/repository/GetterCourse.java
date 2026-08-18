@@ -3,6 +3,7 @@ package ru.anyforms.edu.repository;
 import ru.anyforms.edu.model.course.Course;
 import ru.anyforms.edu.model.course.CourseModule;
 import ru.anyforms.edu.model.course.Lesson;
+import ru.anyforms.edu.model.course.LessonFile;
 
 import java.util.List;
 import java.util.Optional;
@@ -15,6 +16,8 @@ public interface GetterCourse {
     Optional<CourseModule> getModuleById(UUID id);
 
     Optional<Lesson> getLessonById(UUID id);
+
+    Optional<LessonFile> getFileById(UUID id);
 
     /** Для перенумерации: модули курса по возрастанию порядка */
     List<CourseModule> getModules(UUID courseId);

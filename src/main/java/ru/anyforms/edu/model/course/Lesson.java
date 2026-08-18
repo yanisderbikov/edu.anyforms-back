@@ -6,9 +6,11 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
-/** Урок: заголовок + видео + описание. */
+/** Урок: заголовок + видео + описание + файлы-материалы. */
 @Entity
 @Table(name = "lesson")
 @Getter
@@ -43,6 +45,12 @@ public class Lesson {
     /** Обложка урока (16:9): ключ S3 или полный URL */
     @Column(name = "cover_url", columnDefinition = "TEXT")
     private String coverUrl;
+
+    /** Файлы-материалы в порядке добавления */
+    @OneToMany(mappedBy = "lesson", fetch = FetchType.LAZY)
+    @OrderBy("createdAt ASC, id ASC")
+    @Builder.Default
+    private List<LessonFile> files = new ArrayList<>();
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

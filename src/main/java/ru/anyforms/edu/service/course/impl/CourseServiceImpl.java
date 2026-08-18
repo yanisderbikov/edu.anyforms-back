@@ -73,6 +73,14 @@ class CourseServiceImpl implements CourseService {
     }
 
     private CourseResponseDTO.LessonDTO toLessonDTO(Lesson lesson, boolean admin) {
+        List<CourseResponseDTO.LessonFileDTO> files = lesson.getFiles().stream()
+                .map(f -> new CourseResponseDTO.LessonFileDTO(
+                        f.getId().toString(),
+                        f.getName(),
+                        s3FileStorage.resolveDownloadUrl(f.getFileUrl(), f.getName()),
+                        f.getSizeBytes()))
+                .toList();
+
         return new CourseResponseDTO.LessonDTO(
                 lesson.getId().toString(),
                 lesson.getTitle(),
@@ -80,7 +88,8 @@ class CourseServiceImpl implements CourseService {
                 s3FileStorage.resolveUrl(lesson.getVideoUrl()),
                 admin ? lesson.getVideoUrl() : null,
                 s3FileStorage.resolveUrl(lesson.getCoverUrl()),
-                admin ? lesson.getCoverUrl() : null
+                admin ? lesson.getCoverUrl() : null,
+                files
         );
     }
 }
