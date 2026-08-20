@@ -2,7 +2,10 @@ package ru.anyforms.edu.dto.course;
 
 import java.util.List;
 
-/** Полный ответ /api/course — ровно тот JSON, который ждёт фронтенд. */
+/**
+ * Ответ /api/course. Список модулей идёт без уроков — только превью со счётчиками,
+ * чтобы главная не тянула весь курс; уроки приходят из /api/course/modules/{id}.
+ */
 public record CourseResponseDTO(
         CourseDTO course,
         SupportDTO support,
@@ -26,6 +29,11 @@ public record CourseResponseDTO(
             String imageKey,
             String status,
             String opensAt,
+            /** Сколько уроков в модуле — для карточки на главной */
+            int lessonsCount,
+            /** Сколько из них досмотрел этот студент (у админа всегда 0) */
+            int lessonsDone,
+            /** Уроки: пусто в списке модулей, заполнено при запросе одного модуля и в админке */
             List<LessonDTO> lessons
     ) {
     }
