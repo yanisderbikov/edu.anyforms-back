@@ -24,4 +24,10 @@ public interface GetterCourse {
 
     /** Для перенумерации: уроки модуля по возрастанию порядка */
     List<Lesson> getLessons(UUID moduleId);
+
+    /**
+     * Ссылается ли на этот файл (ключ S3 или ссылка Kinescope) кто-то ещё:
+     * живой урок видео/обложкой либо запись материала. Удалённые уроки не считаются.
+     */
+    boolean isAssetInUse(String urlOrKey);
 }

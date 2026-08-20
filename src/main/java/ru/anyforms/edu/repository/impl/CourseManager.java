@@ -10,6 +10,7 @@ import ru.anyforms.edu.model.course.LessonFile;
 import ru.anyforms.edu.repository.GetterCourse;
 import ru.anyforms.edu.repository.SaverCourse;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -80,6 +81,18 @@ class CourseManager implements GetterCourse, SaverCourse {
             return lessonRepo.findByModuleIdOrderByOrdAsc(moduleId);
         } catch (Exception e) {
             log.error("getLessons failed", e);
+            throw new RuntimeException("Database exception", e);
+        }
+    }
+
+    @Override
+    public boolean isAssetInUse(String urlOrKey) {
+        try {
+            return lessonRepo.countByVideoUrlOrCoverUrl(urlOrKey, urlOrKey) > 0
+                    || fileRepo.countAliveByFileUrl(urlOrKey) > 0
+                    || moduleRepo.countByImageUrl(urlOrKey) > 0;
+        } catch (Exception e) {
+            log.error("isAssetInUse failed", e);
             throw new RuntimeException("Database exception", e);
         }
     }
@@ -167,7 +180,10 @@ class CourseManager implements GetterCourse, SaverCourse {
     @Override
     public void deleteLesson(Lesson lesson) {
         try {
-            lessonRepo.delete(lesson);
+            // Мягко: строку не трогаем, иначе каскадом уедет прогресс студентов.
+            // Из выборок урок пропадёт сам — фильтр стоит на сущности (@SQLRestriction)
+            lesson.setDeletedAt(Instant.now());
+            lessonRepo.save(lesson);
         } catch (Exception e) {
             log.error("deleteLesson failed", e);
             throw new RuntimeException("Database exception", e);

@@ -16,8 +16,10 @@ import ru.anyforms.edu.model.course.LessonFile;
 import ru.anyforms.edu.repository.GetterCourse;
 import ru.anyforms.edu.repository.SaverCourse;
 import ru.anyforms.edu.service.admin.AdminCourseService;
+import ru.anyforms.edu.service.cleanup.LessonAssetCleaner;
 import ru.anyforms.edu.util.Ordering;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -26,6 +28,7 @@ class AdminCourseServiceImpl implements AdminCourseService {
 
     private final GetterCourse getterCourse;
     private final SaverCourse saverCourse;
+    private final LessonAssetCleaner assetCleaner;
 
     private Course requireCourse() {
         return getterCourse.getBySlug(Course.DEFAULT_SLUG)
@@ -75,6 +78,7 @@ class AdminCourseServiceImpl implements AdminCourseService {
     @Transactional
     public void updateModule(UUID moduleId, ModuleRequestDTO request) {
         CourseModule module = requireModule(moduleId);
+        String replacedImage = replaced(module.getImageUrl(), request.getImageUrl());
         module.setOrd(request.getOrder());
         module.setTitle(request.getTitle());
         module.setDescription(request.getDescription());
@@ -82,6 +86,9 @@ class AdminCourseServiceImpl implements AdminCourseService {
         module.setOpensAt(request.getOpensAt());
         saverCourse.saveModule(module);
         resequenceModules(module.getCourse().getId(), moduleId);
+        if (replacedImage != null) {
+            assetCleaner.deleteAfterCommit(LessonAssetCleaner.Assets.ofCover(replacedImage));
+        }
     }
 
     @Override
@@ -89,8 +96,14 @@ class AdminCourseServiceImpl implements AdminCourseService {
     public void deleteModule(UUID moduleId) {
         CourseModule module = requireModule(moduleId);
         UUID courseId = module.getCourse().getId();
+        List<LessonAssetCleaner.Assets> assets = new java.util.ArrayList<>(
+                getterCourse.getLessons(moduleId).stream()
+                        .map(LessonAssetCleaner.Assets::of)
+                        .toList());
+        assets.add(LessonAssetCleaner.Assets.ofCover(module.getImageUrl()));
         saverCourse.deleteModule(module);
         resequenceModules(courseId, null);
+        assets.forEach(assetCleaner::deleteAfterCommit);
     }
 
     @Override
@@ -112,6 +125,8 @@ class AdminCourseServiceImpl implements AdminCourseService {
     @Transactional
     public void updateLesson(UUID lessonId, LessonRequestDTO request) {
         Lesson lesson = requireLesson(lessonId);
+        String replacedVideo = replaced(lesson.getVideoUrl(), request.getVideoUrl());
+        String replacedCover = replaced(lesson.getCoverUrl(), request.getCoverUrl());
         lesson.setOrd(request.getOrder());
         lesson.setTitle(request.getTitle() == null ? "" : request.getTitle());
         lesson.setDescription(request.getDescription());
@@ -119,6 +134,12 @@ class AdminCourseServiceImpl implements AdminCourseService {
         lesson.setCoverUrl(request.getCoverUrl());
         saverCourse.saveLesson(lesson);
         resequenceLessons(lesson.getModule().getId(), lessonId);
+        if (replacedVideo != null) {
+            assetCleaner.deleteAfterCommit(LessonAssetCleaner.Assets.ofVideo(replacedVideo));
+        }
+        if (replacedCover != null) {
+            assetCleaner.deleteAfterCommit(LessonAssetCleaner.Assets.ofCover(replacedCover));
+        }
     }
 
     @Override
@@ -126,8 +147,10 @@ class AdminCourseServiceImpl implements AdminCourseService {
     public void deleteLesson(UUID lessonId) {
         Lesson lesson = requireLesson(lessonId);
         UUID moduleId = lesson.getModule().getId();
+        LessonAssetCleaner.Assets assets = LessonAssetCleaner.Assets.of(lesson);
         saverCourse.deleteLesson(lesson);
         resequenceLessons(moduleId, null);
+        assetCleaner.deleteAfterCommit(assets);
     }
 
     @Override
@@ -147,7 +170,20 @@ class AdminCourseServiceImpl implements AdminCourseService {
     public void deleteLessonFile(UUID fileId) {
         LessonFile file = getterCourse.getFileById(fileId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Файл не найден: " + fileId));
+        String fileUrl = file.getFileUrl();
         saverCourse.deleteFile(file);
+        assetCleaner.deleteAfterCommit(LessonAssetCleaner.Assets.ofFile(fileUrl));
+    }
+
+    /**
+     * Старое значение поля, если оно действительно уходит из урока
+     * (заменили другим или очистили); null — менять нечего.
+     */
+    private String replaced(String was, String now) {
+        if (was == null || was.isBlank() || was.equals(now)) {
+            return null;
+        }
+        return was;
     }
 
     /** Модули выстраиваются подряд: 1, 2, 3… */

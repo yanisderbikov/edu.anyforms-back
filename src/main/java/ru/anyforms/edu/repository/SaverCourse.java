@@ -23,6 +23,7 @@ public interface SaverCourse {
 
     void deleteModule(CourseModule module);
 
+    /** Мягкое удаление: проставляет deleted_at — строка и прогресс студентов остаются */
     void deleteLesson(Lesson lesson);
 
     void deleteFile(LessonFile file);

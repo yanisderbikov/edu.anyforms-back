@@ -11,4 +11,6 @@ import java.util.UUID;
 interface CourseModuleRepo extends JpaRepository<CourseModule, UUID> {
 
     List<CourseModule> findByCourseIdOrderByOrdAsc(UUID courseId);
+
+    long countByImageUrl(String imageUrl);
 }

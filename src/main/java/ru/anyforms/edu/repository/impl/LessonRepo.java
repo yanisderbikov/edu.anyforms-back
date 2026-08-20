@@ -11,4 +11,7 @@ import java.util.UUID;
 interface LessonRepo extends JpaRepository<Lesson, UUID> {
 
     List<Lesson> findByModuleIdOrderByOrdAsc(UUID moduleId);
+
+    /** Живые уроки (удалённые отсекает @SQLRestriction), где файл ещё используется */
+    long countByVideoUrlOrCoverUrl(String videoUrl, String coverUrl);
 }
