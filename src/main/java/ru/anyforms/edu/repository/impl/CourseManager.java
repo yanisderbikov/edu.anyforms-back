@@ -90,7 +90,7 @@ class CourseManager implements GetterCourse, SaverCourse {
         try {
             return lessonRepo.countByVideoUrlOrCoverUrl(urlOrKey, urlOrKey) > 0
                     || fileRepo.countAliveByFileUrl(urlOrKey) > 0
-                    || moduleRepo.countByImageUrl(urlOrKey) > 0;
+                    || moduleRepo.countByAnyAsset(urlOrKey) > 0;
         } catch (Exception e) {
             log.error("isAssetInUse failed", e);
             throw new RuntimeException("Database exception", e);

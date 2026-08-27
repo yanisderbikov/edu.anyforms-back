@@ -1,6 +1,8 @@
 package ru.anyforms.edu.repository.impl;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import ru.anyforms.edu.model.course.CourseModule;
 
@@ -12,5 +14,11 @@ interface CourseModuleRepo extends JpaRepository<CourseModule, UUID> {
 
     List<CourseModule> findByCourseIdOrderByOrdAsc(UUID courseId);
 
-    long countByImageUrl(String imageUrl);
+    /** Сколько модулей ссылаются на файл любым из медиа-полей */
+    @Query("""
+            select count(m) from CourseModule m
+            where m.imageUrl = :asset or m.coverUrl = :asset
+               or m.videoUrl = :asset or m.videoCoverUrl = :asset
+            """)
+    long countByAnyAsset(@Param("asset") String asset);
 }

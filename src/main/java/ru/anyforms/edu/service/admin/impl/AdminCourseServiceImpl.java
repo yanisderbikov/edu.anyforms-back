@@ -68,6 +68,9 @@ class AdminCourseServiceImpl implements AdminCourseService {
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .imageUrl(request.getImageUrl())
+                .coverUrl(request.getCoverUrl())
+                .videoUrl(request.getVideoUrl())
+                .videoCoverUrl(request.getVideoCoverUrl())
                 .opensAt(request.getOpensAt())
                 .build());
         resequenceModules(course.getId(), module.getId());
@@ -79,15 +82,30 @@ class AdminCourseServiceImpl implements AdminCourseService {
     public void updateModule(UUID moduleId, ModuleRequestDTO request) {
         CourseModule module = requireModule(moduleId);
         String replacedImage = replaced(module.getImageUrl(), request.getImageUrl());
+        String replacedCover = replaced(module.getCoverUrl(), request.getCoverUrl());
+        String replacedVideo = replaced(module.getVideoUrl(), request.getVideoUrl());
+        String replacedVideoCover = replaced(module.getVideoCoverUrl(), request.getVideoCoverUrl());
         module.setOrd(request.getOrder());
         module.setTitle(request.getTitle());
         module.setDescription(request.getDescription());
         module.setImageUrl(request.getImageUrl());
+        module.setCoverUrl(request.getCoverUrl());
+        module.setVideoUrl(request.getVideoUrl());
+        module.setVideoCoverUrl(request.getVideoCoverUrl());
         module.setOpensAt(request.getOpensAt());
         saverCourse.saveModule(module);
         resequenceModules(module.getCourse().getId(), moduleId);
         if (replacedImage != null) {
             assetCleaner.deleteAfterCommit(LessonAssetCleaner.Assets.ofCover(replacedImage));
+        }
+        if (replacedCover != null) {
+            assetCleaner.deleteAfterCommit(LessonAssetCleaner.Assets.ofCover(replacedCover));
+        }
+        if (replacedVideo != null) {
+            assetCleaner.deleteAfterCommit(LessonAssetCleaner.Assets.ofVideo(replacedVideo));
+        }
+        if (replacedVideoCover != null) {
+            assetCleaner.deleteAfterCommit(LessonAssetCleaner.Assets.ofCover(replacedVideoCover));
         }
     }
 
@@ -101,6 +119,9 @@ class AdminCourseServiceImpl implements AdminCourseService {
                         .map(LessonAssetCleaner.Assets::of)
                         .toList());
         assets.add(LessonAssetCleaner.Assets.ofCover(module.getImageUrl()));
+        assets.add(LessonAssetCleaner.Assets.ofCover(module.getCoverUrl()));
+        assets.add(LessonAssetCleaner.Assets.ofVideo(module.getVideoUrl()));
+        assets.add(LessonAssetCleaner.Assets.ofCover(module.getVideoCoverUrl()));
         saverCourse.deleteModule(module);
         resequenceModules(courseId, null);
         assets.forEach(assetCleaner::deleteAfterCommit);

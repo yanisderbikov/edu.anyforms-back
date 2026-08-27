@@ -96,6 +96,13 @@ class CourseServiceImpl implements CourseService {
                 module.getDescription(),
                 s3FileStorage.resolveUrl(module.getImageUrl()),
                 admin ? module.getImageUrl() : null,
+                s3FileStorage.resolveUrl(module.getCoverUrl()),
+                admin ? module.getCoverUrl() : null,
+                // Видео закрытого модуля студенту не отдаём — как и уроки
+                open || admin ? s3FileStorage.resolveUrl(module.getVideoUrl()) : null,
+                admin ? module.getVideoUrl() : null,
+                open || admin ? s3FileStorage.resolveUrl(module.getVideoCoverUrl()) : null,
+                admin ? module.getVideoCoverUrl() : null,
                 open ? "open" : "locked",
                 module.getOpensAt() == null ? null : module.getOpensAt().toString(),
                 moduleLessons.size(),
