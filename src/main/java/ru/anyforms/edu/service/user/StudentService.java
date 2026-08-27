@@ -8,9 +8,15 @@ import java.util.UUID;
 
 public interface StudentService {
 
-    List<StudentDTO> getAll();
+    List<StudentDTO> search(String emailQuery);
 
     StudentDTO create(StudentRequestDTO request);
+
+    StudentDTO setActive(UUID id, boolean active);
+
+    StudentDTO setRole(UUID id, String role, String actorEmail);
+
+    StudentDTO setPlan(UUID id, String plan);
 
     void delete(UUID id);
 }

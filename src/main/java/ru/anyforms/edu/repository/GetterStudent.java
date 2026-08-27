@@ -10,6 +10,8 @@ public interface GetterStudent {
 
     List<Student> getAll();
 
+    List<Student> searchByEmail(String emailPart);
+
     Optional<Student> getByEmail(String email);
 
     Optional<Student> getById(UUID id);

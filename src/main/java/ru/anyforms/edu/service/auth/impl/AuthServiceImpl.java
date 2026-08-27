@@ -82,6 +82,12 @@ class AuthServiceImpl implements AuthService {
 
         Student student = getterStudent.getByEmail(email).orElse(null);
 
+        // Деактивирован админом — покупка это не перебивает
+        if (student != null && !Boolean.TRUE.equals(student.getActive())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Доступ к курсу отключён. Напишите в поддержку.");
+        }
+
         if (!access.hasAccess()) {
             // Доступ, выданный админом вручную, покупкой не управляется
             if (student != null && Boolean.TRUE.equals(student.getActive())) {
