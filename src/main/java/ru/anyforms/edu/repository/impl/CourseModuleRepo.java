@@ -6,7 +6,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import ru.anyforms.edu.model.course.CourseModule;
 
-import java.time.LocalDate;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -19,10 +19,10 @@ interface CourseModuleRepo extends JpaRepository<CourseModule, UUID> {
     @Query("""
             select m from CourseModule m
             where m.openEmailQueuedAt is null
-              and (m.opensAt is null or m.opensAt <= :today)
+              and (m.opensAt is null or m.opensAt <= :now)
               and m.course.active = true
             """)
-    List<CourseModule> findToAnnounceOpen(@Param("today") LocalDate today);
+    List<CourseModule> findToAnnounceOpen(@Param("now") Instant now);
 
     /** Сколько модулей ссылаются на файл любым из медиа-полей */
     @Query("""

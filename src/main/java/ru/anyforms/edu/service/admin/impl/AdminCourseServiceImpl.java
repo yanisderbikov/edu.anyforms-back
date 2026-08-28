@@ -17,6 +17,7 @@ import ru.anyforms.edu.repository.GetterCourse;
 import ru.anyforms.edu.repository.SaverCourse;
 import ru.anyforms.edu.service.admin.AdminCourseService;
 import ru.anyforms.edu.service.cleanup.LessonAssetCleaner;
+import ru.anyforms.edu.util.MskTime;
 import ru.anyforms.edu.util.Ordering;
 
 import java.time.Instant;
@@ -72,10 +73,10 @@ class AdminCourseServiceImpl implements AdminCourseService {
                 .coverUrl(request.getCoverUrl())
                 .videoUrl(request.getVideoUrl())
                 .videoCoverUrl(request.getVideoCoverUrl())
-                .opensAt(request.getOpensAt())
+                .opensAt(MskTime.toInstant(request.getOpensAt()))
                 .build();
         // Модуль, созданный сразу открытым, не «открывается» — письма об открытии
-        // не шлём. Они уйдут, только если задана будущая дата и она наступит
+        // не шлём. Они уйдут, только если задан будущий момент и он наступит
         if (module.isOpen()) {
             module.setOpenEmailQueuedAt(Instant.now());
         }
@@ -99,9 +100,9 @@ class AdminCourseServiceImpl implements AdminCourseService {
         module.setCoverUrl(request.getCoverUrl());
         module.setVideoUrl(request.getVideoUrl());
         module.setVideoCoverUrl(request.getVideoCoverUrl());
-        module.setOpensAt(request.getOpensAt());
-        // Дату открытия перенесли в будущее — модуль снова закрыт: когда дата
-        // наступит, объявим об открытии заново. Открытие руками (дата очищена или
+        module.setOpensAt(MskTime.toInstant(request.getOpensAt()));
+        // Момент открытия перенесли в будущее — модуль снова закрыт: когда время
+        // придёт, объявим об открытии заново. Открытие руками (время очищено или
         // в прошлом) подхватит планировщик, если про модуль ещё не объявляли
         if (!module.isOpen()) {
             module.setOpenEmailQueuedAt(null);

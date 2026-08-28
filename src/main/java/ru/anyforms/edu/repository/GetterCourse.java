@@ -5,7 +5,7 @@ import ru.anyforms.edu.model.course.CourseModule;
 import ru.anyforms.edu.model.course.Lesson;
 import ru.anyforms.edu.model.course.LessonFile;
 
-import java.time.LocalDate;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -27,7 +27,7 @@ public interface GetterCourse {
     List<Lesson> getLessons(UUID moduleId);
 
     /** Модули активных курсов, которые уже открылись, но об открытии ещё не объявляли */
-    List<CourseModule> getModulesToAnnounceOpen(LocalDate today);
+    List<CourseModule> getModulesToAnnounceOpen(Instant now);
 
     /**
      * Ссылается ли на этот файл (ключ S3 или ссылка Kinescope) кто-то ещё:

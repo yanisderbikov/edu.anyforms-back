@@ -12,12 +12,11 @@ import ru.anyforms.edu.repository.GetterStudent;
 import ru.anyforms.edu.repository.SaverCourse;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.List;
 
 /**
- * Объявляет об открытии модулей. Раз в несколько минут ищет модули, которые уже
- * открылись (наступила дата opensAt или админ открыл модуль руками), но о которых
+ * Объявляет об открытии модулей. Раз в минуту ищет модули, которые уже
+ * открылись (наступил момент opensAt или админ открыл модуль руками), но о которых
  * студентам ещё не объявляли, и ставит в очередь по письму каждому активному студенту.
  * <p>
  * Сами письма шлёт {@link ru.anyforms.edu.service.task.runner.AbstractRunnableTask
@@ -52,8 +51,8 @@ public class ModuleOpenedEmailSchedulerTask {
     public void tick() {
         List<CourseModule> opened;
         try {
-            // Та же «календарная» логика, что в CourseModule.isOpen()
-            opened = getterCourse.getModulesToAnnounceOpen(LocalDate.now());
+            // Тот же критерий открытости, что в CourseModule.isOpen()
+            opened = getterCourse.getModulesToAnnounceOpen(Instant.now());
         } catch (Exception e) {
             log.error("Не удалось получить список открывшихся модулей", e);
             return;
