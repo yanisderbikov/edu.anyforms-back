@@ -26,8 +26,8 @@ public class AuthController {
     private final AuthService authService;
 
     @Operation(summary = "Отправить код входа на почту",
-            description = "Доступ клиента проверяется в anyforms-5 (оплаченная покупка курса), "
-                    + "админы берутся из service_user")
+            description = "Доступ клиента: сначала своя база (student), незнакомый email проверяется "
+                    + "в anyforms-back (оплаченная покупка курса); админы берутся из service_user")
     @PostMapping("/request-code")
     public ResponseEntity<Map<String, String>> requestCode(@Valid @RequestBody RequestCodeDTO request) {
         authService.requestCode(request.getEmail());

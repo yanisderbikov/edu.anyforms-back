@@ -1,6 +1,6 @@
 package ru.anyforms.edu.service.email;
 
-/** Загрузка HTML-шаблонов писем из resources/templates (паттерн anyforms-5). */
+/** Загрузка HTML-шаблонов писем из resources/templates (паттерн anyforms-back). */
 public final class EmailTemplate {
 
     private EmailTemplate() {

@@ -32,7 +32,7 @@ public class Student {
     @Column(nullable = false)
     private Boolean active = Boolean.TRUE;
 
-    /** SELF или PERSONAL — тариф из anyforms-5 */
+    /** SELF или PERSONAL — тариф из anyforms-back */
     @Column(length = 16)
     private String plan;
 

@@ -32,8 +32,8 @@ import java.util.UUID;
 class AuthServiceImpl implements AuthService {
 
     private static final Duration CODE_TTL = Duration.ofMinutes(10);
-    /** Повторный код не чаще раза в минуту */
-    private static final Duration RESEND_COOLDOWN = Duration.ofSeconds(60);
+    /** Повторный код не чаще раза в 30 секунд */
+    private static final Duration RESEND_COOLDOWN = Duration.ofSeconds(30);
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final GetterServiceUser getterServiceUser;
@@ -63,53 +63,47 @@ class AuthServiceImpl implements AuthService {
     }
 
     /**
-     * Доступ клиента подтверждает anyforms-5: там лежат оплаченные покупки курса.
-     * Ответ сохраняем у себя — и как право входа, и как тариф (SELF / PERSONAL).
-     * Если сервис не ответил, пускаем тех, кто уже заходил раньше или добавлен админом.
+     * Порядок проверки: сначала своя база, потом anyforms-back.
+     * Знакомый студент с активным доступом (уже заходил или добавлен админом)
+     * входит без похода в anyforms-back; деактивированный админом — не входит,
+     * даже если покупка есть. И только незнакомый email проверяем в anyforms-back
+     * (там лежат оплаченные покупки курса) — ответ сохраняем у себя как право
+     * входа и тариф (SELF / PERSONAL), дальше он живёт в нашей базе.
      */
     private void syncStudentAccess(String email) {
-        CourseAccessClient.CourseAccess access;
-        try {
-            access = courseAccessClient.check(email);
-        } catch (CourseAccessClient.CourseAccessUnavailableException e) {
-            if (getterStudent.getByEmail(email).map(s -> Boolean.TRUE.equals(s.getActive())).orElse(false)) {
-                log.warn("anyforms-5 недоступен, пускаем {} по ранее выданному доступу", email);
+        Student student = getterStudent.getByEmail(email).orElse(null);
+        if (student != null) {
+            if (Boolean.TRUE.equals(student.getActive())) {
                 return;
             }
-            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
-                    "Не получилось проверить доступ. Попробуйте через минуту или напишите в поддержку.");
-        }
-
-        Student student = getterStudent.getByEmail(email).orElse(null);
-
-        // Деактивирован админом — покупка это не перебивает
-        if (student != null && !Boolean.TRUE.equals(student.getActive())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Доступ к курсу отключён. Напишите в поддержку.");
         }
 
+        CourseAccessClient.CourseAccess access;
+        try {
+            access = courseAccessClient.check(email);
+        } catch (CourseAccessClient.CourseAccessUnavailableException e) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                    "Не получилось проверить доступ. Попробуйте через минуту или напишите в поддержку.");
+        }
+
         if (!access.hasAccess()) {
-            // Доступ, выданный админом вручную, покупкой не управляется
-            if (student != null && Boolean.TRUE.equals(student.getActive())) {
-                return;
-            }
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                     "У этого e-mail нет доступа к курсу. Проверьте адрес или напишите в поддержку.");
         }
 
-        if (student == null) {
-            student = Student.builder().email(email).build();
-        }
-        student.setPlan(access.plan());
-        student.setActive(Boolean.TRUE);
-        saverStudent.save(student);
+        saverStudent.save(Student.builder()
+                .email(email)
+                .plan(access.plan())
+                .active(Boolean.TRUE)
+                .build());
     }
 
     @Override
     @Transactional
     public void requestCode(String rawEmail) {
         String email = ServiceUser.normalizeEmail(rawEmail);
-        // Админов в anyforms-5 не проверяем — у них доступ по своей таблице
         if (!isAdmin(email)) {
             syncStudentAccess(email);
         }
@@ -119,7 +113,7 @@ class AuthServiceImpl implements AuthService {
                 && existing.get().getCreatedAt() != null
                 && existing.get().getCreatedAt().isAfter(Instant.now().minus(RESEND_COOLDOWN))) {
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
-                    "Код уже отправлен. Проверьте почту или попробуйте через минуту.");
+                    "Код уже отправлен. Проверьте почту или запросите новый через 30 секунд.");
         }
 
         String code = String.format("%06d", RANDOM.nextInt(1_000_000));

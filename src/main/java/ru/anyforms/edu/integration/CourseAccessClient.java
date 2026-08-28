@@ -1,6 +1,6 @@
 package ru.anyforms.edu.integration;
 
-/** Проверка в anyforms-5: покупал ли этот email курс и по какому тарифу. */
+/** Проверка в anyforms-back: покупал ли этот email курс и по какому тарифу. */
 public interface CourseAccessClient {
 
     /**
@@ -18,7 +18,7 @@ public interface CourseAccessClient {
     }
 
     /**
-     * @throws CourseAccessUnavailableException если anyforms-5 недоступен —
+     * @throws CourseAccessUnavailableException если anyforms-back недоступен —
      *                                          отличаем «нет доступа» от «не смогли спросить»
      */
     CourseAccess check(String email);

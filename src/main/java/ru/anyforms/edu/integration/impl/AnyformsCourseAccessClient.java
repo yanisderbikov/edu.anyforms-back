@@ -12,7 +12,7 @@ import ru.anyforms.edu.integration.CourseAccessClient;
 import java.time.Duration;
 
 /**
- * Клиент к anyforms-5: GET /api/tech/course-access?email=…
+ * Клиент к anyforms-back: GET /api/tech/course-access?email=…
  * Авторизация — общий межсервисный токен в заголовке X-Auth-Token.
  * Без настроек приложение не поднимется: без этой проверки клиенты не смогут войти.
  */
@@ -41,7 +41,7 @@ class AnyformsCourseAccessClient implements CourseAccessClient {
     private static void require(String value, String envName) {
         if (value == null || value.isBlank()) {
             throw new IllegalStateException("Не задан " + envName
-                    + " — без него нельзя проверить доступ клиентов к курсу в anyforms-5");
+                    + " — без него нельзя проверить доступ клиентов к курсу в anyforms-back");
         }
     }
 
@@ -58,15 +58,15 @@ class AnyformsCourseAccessClient implements CourseAccessClient {
                     .block(TIMEOUT);
 
             if (response == null) {
-                throw new CourseAccessUnavailableException("anyforms-5 вернул пустой ответ", null);
+                throw new CourseAccessUnavailableException("anyforms-back вернул пустой ответ", null);
             }
             log.info("Доступ к курсу для {}: hasAccess={}, plan={}", email, response.hasAccess(), response.plan());
             return new CourseAccess(response.hasAccess(), response.plan());
         } catch (CourseAccessUnavailableException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Не удалось проверить доступ к курсу в anyforms-5 для {}", email, e);
-            throw new CourseAccessUnavailableException("anyforms-5 недоступен", e);
+            log.error("Не удалось проверить доступ к курсу в anyforms-back для {}", email, e);
+            throw new CourseAccessUnavailableException("anyforms-back недоступен", e);
         }
     }
 
