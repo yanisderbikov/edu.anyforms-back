@@ -11,12 +11,15 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import ru.anyforms.edu.dto.admin.CourseRequestDTO;
+import ru.anyforms.edu.dto.admin.KinescopeUploadRequestDTO;
+import ru.anyforms.edu.dto.admin.LessonFileRequestDTO;
 import ru.anyforms.edu.dto.admin.LessonRequestDTO;
 import ru.anyforms.edu.dto.admin.ModuleRequestDTO;
 import ru.anyforms.edu.dto.admin.PresignUploadRequestDTO;
 import ru.anyforms.edu.dto.course.CourseResponseDTO;
 import ru.anyforms.edu.service.admin.AdminCourseService;
 import ru.anyforms.edu.service.course.CourseService;
+import ru.anyforms.edu.service.kinescope.KinescopeService;
 import ru.anyforms.edu.service.s3.S3FileStorage;
 
 import java.util.Map;
@@ -34,6 +37,7 @@ public class AdminCourseController {
     private final CourseService courseService;
     private final AdminCourseService adminCourseService;
     private final S3FileStorage s3FileStorage;
+    private final KinescopeService kinescopeService;
 
     @Operation(summary = "Курс целиком для админки", description = "Все модули и уроки, включая закрытые")
     @GetMapping("/course")
@@ -93,6 +97,23 @@ public class AdminCourseController {
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(summary = "Прикрепить файл к уроку",
+            description = "Сам файл уже в S3 (см. presign-upload) — здесь сохраняем ключ, имя и размер. "
+                    + "Количество файлов у урока не ограничено")
+    @PostMapping("/lessons/{lessonId}/files")
+    public ResponseEntity<Map<String, String>> addLessonFile(@PathVariable UUID lessonId,
+                                                             @Valid @RequestBody LessonFileRequestDTO request) {
+        UUID id = adminCourseService.addLessonFile(lessonId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("id", id.toString()));
+    }
+
+    @Operation(summary = "Открепить файл от урока")
+    @DeleteMapping("/files/{fileId}")
+    public ResponseEntity<Void> deleteLessonFile(@PathVariable UUID fileId) {
+        adminCourseService.deleteLessonFile(fileId);
+        return ResponseEntity.noContent().build();
+    }
+
     @Operation(summary = "Подписанный URL для прямой загрузки в S3",
             description = "Файл уходит из браузера сразу в бакет (PUT по uploadUrl), бэкенд только подписывает. "
                     + "Вернувшийся key сохраняем в модуль/урок. Требует CORS на бакете.")
@@ -103,6 +124,22 @@ public class AdminCourseController {
         S3FileStorage.PresignedUpload presigned =
                 s3FileStorage.presignUpload(request.getFilename(), request.getContentType(), prefix);
         return ResponseEntity.ok(Map.of("uploadUrl", presigned.uploadUrl(), "key", presigned.key()));
+    }
+
+    @Operation(summary = "Ссылка прямой загрузки видео в Kinescope",
+            description = "Бэкенд создаёт upload-ссылку (API-токен Kinescope живёт только здесь), "
+                    + "браузер шлёт файл прямо в Kinescope. Вернувшийся embedUrl сохраняем в урок.")
+    @PostMapping("/kinescope/upload-link")
+    public ResponseEntity<Map<String, String>> kinescopeUploadLink(
+            @Valid @RequestBody KinescopeUploadRequestDTO request) {
+        String title = request.getTitle() == null || request.getTitle().isBlank()
+                ? request.getFilename() : request.getTitle();
+        KinescopeService.UploadLink link = kinescopeService.createUploadLink(
+                request.getFilename(), request.getFilesize(), title);
+        return ResponseEntity.ok(Map.of(
+                "videoId", link.videoId(),
+                "endpoint", link.endpoint(),
+                "embedUrl", link.embedUrl()));
     }
 
     @ExceptionHandler(ResponseStatusException.class)

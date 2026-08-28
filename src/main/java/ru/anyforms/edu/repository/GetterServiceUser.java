@@ -4,13 +4,11 @@ import ru.anyforms.edu.model.user.ServiceUser;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
+/** Админы платформы (таблица service_user): назначаются из админки аккаунтов. */
 public interface GetterServiceUser {
-
-    List<ServiceUser> getAll();
 
     Optional<ServiceUser> getByEmail(String email);
 
-    Optional<ServiceUser> getById(UUID id);
+    List<ServiceUser> getActive();
 }

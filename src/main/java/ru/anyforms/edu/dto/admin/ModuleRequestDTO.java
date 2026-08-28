@@ -24,6 +24,18 @@ public class ModuleRequestDTO {
 
     private String description;
 
+    /** Картинка карточки (16:9): ключ S3 или полный URL */
+    private String imageUrl;
+
+    /** Обложка страницы модуля (широкий баннер): ключ S3 или полный URL */
+    private String coverUrl;
+
+    /** Вводное видео модуля: embed-ссылка Kinescope или ключ S3 */
+    private String videoUrl;
+
+    /** Обложка видео модуля (постер до запуска): ключ S3 или полный URL */
+    private String videoCoverUrl;
+
     /** null = модуль открыт */
     private LocalDate opensAt;
 }

@@ -32,8 +32,16 @@ public class Student {
     @Column(nullable = false)
     private Boolean active = Boolean.TRUE;
 
+    /** SELF или PERSONAL — тариф из anyforms-back */
+    @Column(length = 16)
+    private String plan;
+
     @Column(name = "current_session_id")
     private UUID currentSessionId;
+
+    /** NULL = онбординг ещё не пройден */
+    @Column(name = "onboarding_done_at")
+    private Instant onboardingDoneAt;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

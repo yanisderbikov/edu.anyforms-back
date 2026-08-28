@@ -19,6 +19,12 @@ public interface S3FileStorage {
     String presignedUrl(String key);
 
     /**
+     * Временная подписанная ссылка на скачивание: браузер сохранит файл
+     * под переданным именем, а не под ключом-UUID из бакета.
+     */
+    String presignedDownloadUrl(String key, String downloadName);
+
+    /**
      * imageUrl/videoUrl в БД может быть и полным URL, и ключом S3:
      * http(s)-ссылки отдаём как есть, ключи превращаем в presigned URL.
      */
@@ -26,5 +32,12 @@ public interface S3FileStorage {
         if (urlOrKey == null || urlOrKey.isBlank()) return null;
         if (urlOrKey.startsWith("http://") || urlOrKey.startsWith("https://")) return urlOrKey;
         return presignedUrl(urlOrKey);
+    }
+
+    /** То же для скачиваемых файлов: у ключей S3 задаём имя сохранения. */
+    default String resolveDownloadUrl(String urlOrKey, String downloadName) {
+        if (urlOrKey == null || urlOrKey.isBlank()) return null;
+        if (urlOrKey.startsWith("http://") || urlOrKey.startsWith("https://")) return urlOrKey;
+        return presignedDownloadUrl(urlOrKey, downloadName);
     }
 }

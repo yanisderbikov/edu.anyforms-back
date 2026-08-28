@@ -22,9 +22,19 @@ class StudentManager implements GetterStudent, SaverStudent {
     @Override
     public List<Student> getAll() {
         try {
-            return studentRepo.findAll();
+            return studentRepo.findAllByOrderByCreatedAtDesc();
         } catch (Exception e) {
             log.error("getAll failed", e);
+            throw new RuntimeException("Database exception", e);
+        }
+    }
+
+    @Override
+    public List<Student> searchByEmail(String emailPart) {
+        try {
+            return studentRepo.findByEmailContainingIgnoreCaseOrderByCreatedAtDesc(emailPart);
+        } catch (Exception e) {
+            log.error("searchByEmail failed", e);
             throw new RuntimeException("Database exception", e);
         }
     }

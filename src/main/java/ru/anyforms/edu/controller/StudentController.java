@@ -4,18 +4,18 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import ru.anyforms.edu.model.user.Student;
+import ru.anyforms.edu.dto.admin.StudentActiveRequestDTO;
+import ru.anyforms.edu.dto.admin.StudentDTO;
+import ru.anyforms.edu.dto.admin.StudentPlanRequestDTO;
+import ru.anyforms.edu.dto.admin.StudentRequestDTO;
+import ru.anyforms.edu.dto.admin.StudentRoleRequestDTO;
 import ru.anyforms.edu.service.user.StudentService;
 
 import java.util.List;
@@ -33,33 +33,38 @@ public class StudentController {
 
     private final StudentService studentService;
 
-    @Data
-    @NoArgsConstructor
-    @lombok.AllArgsConstructor
-    @Builder
-    public static class StudentRequestDTO {
-        @NotBlank(message = "Не указан email")
-        @Email(message = "Некорректный email")
-        private String email;
-    }
-
-    public record StudentDTO(String id, String email, Boolean active) {
-        static StudentDTO from(Student s) {
-            return new StudentDTO(s.getId().toString(), s.getEmail(), s.getActive());
-        }
-    }
-
-    @Operation(summary = "Все клиенты")
+    @Operation(summary = "Клиенты: весь список или поиск по части email")
     @GetMapping
-    public ResponseEntity<List<StudentDTO>> getAll() {
-        return ResponseEntity.ok(studentService.getAll().stream().map(StudentDTO::from).toList());
+    public ResponseEntity<List<StudentDTO>> getAll(@RequestParam(required = false) String search) {
+        return ResponseEntity.ok(studentService.search(search));
     }
 
     @Operation(summary = "Дать клиенту доступ к курсу")
     @PostMapping
     public ResponseEntity<StudentDTO> create(@Valid @RequestBody StudentRequestDTO request) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(StudentDTO.from(studentService.create(request.getEmail())));
+        return ResponseEntity.status(HttpStatus.CREATED).body(studentService.create(request));
+    }
+
+    @Operation(summary = "Включить/отключить доступ (отключённого не вернёт даже покупка)")
+    @PatchMapping("/{id}/active")
+    public ResponseEntity<StudentDTO> setActive(@PathVariable UUID id,
+                                                @Valid @RequestBody StudentActiveRequestDTO request) {
+        return ResponseEntity.ok(studentService.setActive(id, request.getActive()));
+    }
+
+    @Operation(summary = "Назначить права: ADMIN — доступ в админку, STUDENT — забрать его")
+    @PatchMapping("/{id}/role")
+    public ResponseEntity<StudentDTO> setRole(@PathVariable UUID id,
+                                              @Valid @RequestBody StudentRoleRequestDTO request,
+                                              Authentication authentication) {
+        return ResponseEntity.ok(studentService.setRole(id, request.getRole(), authentication.getName()));
+    }
+
+    @Operation(summary = "Формат обучения: SELF — общий, PERSONAL — персональный")
+    @PatchMapping("/{id}/plan")
+    public ResponseEntity<StudentDTO> setPlan(@PathVariable UUID id,
+                                              @Valid @RequestBody StudentPlanRequestDTO request) {
+        return ResponseEntity.ok(studentService.setPlan(id, request.getPlan()));
     }
 
     @Operation(summary = "Отозвать доступ")

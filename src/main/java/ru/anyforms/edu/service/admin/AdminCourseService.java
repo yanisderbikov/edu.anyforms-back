@@ -1,6 +1,7 @@
 package ru.anyforms.edu.service.admin;
 
 import ru.anyforms.edu.dto.admin.CourseRequestDTO;
+import ru.anyforms.edu.dto.admin.LessonFileRequestDTO;
 import ru.anyforms.edu.dto.admin.LessonRequestDTO;
 import ru.anyforms.edu.dto.admin.ModuleRequestDTO;
 
@@ -21,4 +22,8 @@ public interface AdminCourseService {
     void updateLesson(UUID lessonId, LessonRequestDTO request);
 
     void deleteLesson(UUID lessonId);
+
+    UUID addLessonFile(UUID lessonId, LessonFileRequestDTO request);
+
+    void deleteLessonFile(UUID fileId);
 }

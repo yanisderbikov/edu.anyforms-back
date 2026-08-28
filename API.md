@@ -1,7 +1,7 @@
 # API учебной платформы
 
 Все админские ручки требуют заголовок `Authorization: Bearer <JWT>` с ролью `ADMIN`.
-Токен берётся из `POST /api/public/auth/verify`. Ошибки всегда возвращаются как `{"message": "текст"}`.
+Токен берётся из `POST /api/auth/verify`. Ошибки всегда возвращаются как `{"message": "текст"}`.
 
 **Курс и онбординг независимы.** Модули (`/admin/course`) — это то, что студент проходит:
 названия, описания, даты открытия и уроки с видео. Онбординг (`/admin/onboarding`) — набор
@@ -11,13 +11,29 @@
 
 ## 1. Вход
 
-### `POST /api/public/auth/request-code`
+### `POST /api/auth/request-code`
 ```json
 { "email": "viaduct-mummy.0f@icloud.com" }
 ```
 Ответ `200`: `{ "message": "Код отправлен на почту" }`
 
-### `POST /api/public/auth/verify`
+Перед отправкой кода проверяется доступ: сначала своя база (`student`),
+и только для незнакомого email — запрос в anyforms-back:
+
+```
+GET https://anyforms.ru/api/tech/course-access?email=client@mail.ru
+X-Auth-Token: <общий межсервисный токен>
+
+200 { "hasAccess": true, "plan": "PERSONAL", "productCode": "COURSE_PERSONAL" }
+```
+
+`plan` (`SELF` / `PERSONAL`) сохраняется в `student.plan`, запись клиента создаётся сама —
+дальше доступ живёт в нашей базе, и повторные входы в anyforms-back не ходят.
+Возможные ответы: `403` — доступ отключён админом, `404` — покупки нет,
+`503` — anyforms-back не ответил (для незнакомого email), `429` — код уже отправлен
+(повтор не чаще раза в 30 секунд). Админы из `service_user` эту проверку не проходят.
+
+### `POST /api/auth/verify`
 ```json
 { "email": "viaduct-mummy.0f@icloud.com", "code": "482915" }
 ```
@@ -61,7 +77,9 @@
           "title": "Знакомство с Blender",
           "description": "Разбираемся в интерфейсе",
           "videoUrl": "https://edu-anyforms.storage.yandexcloud.net/videos/abc.mp4?X-Amz-Signature=...",
-          "videoKey": "videos/abc12345-1111-2222-3333-444455556666.mp4"
+          "videoKey": "videos/abc12345-1111-2222-3333-444455556666.mp4",
+          "cover": "https://edu-anyforms.storage.yandexcloud.net/lessons/abc.jpg?X-Amz-Signature=...",
+          "coverKey": "lessons/abc12345-1111-2222-3333-444455556666.jpg"
         }
       ]
     }
@@ -70,7 +88,7 @@
 ```
 
 ### `GET /api/course` — то, что видит студент
-Требует JWT любой роли. У закрытых модулей `lessons` пустой, `videoKey` всегда `null`.
+Требует JWT любой роли. У закрытых модулей `lessons` пустой, `videoKey` и `coverKey` всегда `null`.
 
 ### `PUT /api/admin/course` — шапка курса
 ```json
@@ -116,9 +134,18 @@
   "order": 1,
   "title": "Знакомство с Blender",
   "description": "Разбираемся в интерфейсе и готовим рабочее место",
-  "videoUrl": "videos/abc12345-1111-2222-3333-444455556666.mp4"
+  "videoUrl": "videos/abc12345-1111-2222-3333-444455556666.mp4",
+  "coverUrl": "lessons/abc12345-1111-2222-3333-444455556666.jpg"
 }
 ```
+
+| Поле | Тип | Обязательно | Смысл |
+|---|---|---|---|
+| `order` | число | да | Порядок; после сохранения список перенумеровывается |
+| `title` | строка | нет | Новый урок создаётся без названия и заполняется после |
+| `description` | строка | нет | Текст под видео |
+| `videoUrl` | строка | нет | Ключ в бакете или полный URL |
+| `coverUrl` | строка | нет | Обложка 16:9 — превью видео до запуска; ключ или полный URL |
 
 ---
 
@@ -194,6 +221,22 @@
 
 ---
 
+## 3.5 Прогресс пользователя — `/api/me` (JWT, любая роль)
+
+Онбординг и просмотренные уроки хранятся в БД (у клиента — в `student` и `lesson_progress`),
+поэтому не теряются и одинаковы на всех устройствах.
+
+- `GET /api/me/progress` →
+  ```json
+  { "onboardingDone": false, "completedLessonIds": ["9992f83f-..."] }
+  ```
+  У админов всегда `onboardingDone: true`, уроки не отслеживаются.
+- `POST /api/me/onboarding-done` → `204` — клиент дошёл до конца онбординга.
+- `POST /api/me/lessons/{lessonId}/complete` → `204` — урок досмотрен
+  (идемпотентно, повторный вызов не ошибка; `404`, если урок не существует).
+
+---
+
 ## 4. Загрузка файлов напрямую в S3
 
 ### `POST /api/admin/presign-upload`
@@ -208,18 +251,37 @@
 }
 ```
 Браузер делает `PUT uploadUrl` с телом файла и заголовком `Content-Type`, совпадающим с `contentType`
-(он входит в подпись). Ссылка живёт 30 минут. Полученный `key` кладём в `videoUrl` урока
-или `imageUrl` слайда. `prefix` — папка в бакете: `videos`, `onboarding`.
+(он входит в подпись). Ссылка живёт 30 минут. Полученный `key` кладём в `videoUrl` или
+`coverUrl` урока, `imageUrl` слайда. `prefix` — папка в бакете: `videos`, `lessons`, `onboarding`.
 
 ---
 
 ## 5. Доступы
 
-### Админы — `/api/admin/service-users`
-`GET` → массив, `POST` `{ "email": "kolya@anyforms.ru", "role": "ADMIN" }` → `201`, `DELETE /{id}` → `204`.
+Первый админ платформы (`service_user`) заводится вручную в базе:
+
+```sql
+INSERT INTO service_user (id, email, role) VALUES (gen_random_uuid(), 'kolya@anyforms.ru', 'ADMIN');
+```
+
+Дальше права раздаются из админки: `PATCH /api/admin/students/{id}/role` (см. ниже).
 
 ### Клиенты — `/api/admin/students`
-`GET` → массив, `POST` `{ "email": "client@mail.ru" }` → `201`, `DELETE /{id}` → `204`.
+`GET` → массив (новые сверху), `GET ?search=часть@email` → поиск по подстроке,
+`POST` `{ "email": "client@mail.ru" }` → `201`,
+`PATCH /{id}/active` `{ "active": false }` → включить/отключить доступ,
+`PATCH /{id}/role` `{ "role": "ADMIN" | "STUDENT" }` → назначить/забрать права админа
+(ADMIN создаёт/включает запись в `service_user`, STUDENT гасит её; себе менять нельзя → `403`),
+`PATCH /{id}/plan` `{ "plan": "SELF" | "PERSONAL" }` → формат обучения
+(тариф берётся из anyforms-back один раз при первом входе, дальше меняется только здесь),
+`DELETE /{id}` → `204` (жёсткое удаление вместе с прогрессом — обычно нужен PATCH).
+
+В ответе у каждого клиента есть `role`: `ADMIN`, если по его email есть активная
+запись в `service_user`, иначе `STUDENT`.
+
+Отключённый аккаунт (`active = false`) не пускается на платформу и **не
+реактивируется покупкой** при входе — вернуть доступ может только админ
+через `PATCH { "active": true }`.
 
 Только эти адреса могут получить код входа. У клиента активна одна сессия: вход
 с нового устройства гасит старый токен. На админов это не распространяется.
@@ -233,7 +295,8 @@
 2. **Порядок — просто число.** Поставили уроку `1` — он встанет первым, соседи подвинутся.
    После каждого сохранения сервер перенумеровывает список в 1, 2, 3…, поэтому дырок
    и конфликтов не бывает. Так же работают модули и слайды онбординга.
-3. **Читаем `videoUrl`/`image`, пишем `videoUrl`/`imageUrl` из `videoKey`/`imageKey`.**
-   В ответе `videoUrl` и `image` — подписанные ссылки на час (для плеера и превью),
-   а сохранять нужно «сырое» значение из `videoKey` / `imageKey`.
+3. **Читаем `videoUrl`/`cover`/`image`, пишем `videoUrl`/`coverUrl`/`imageUrl` из
+   `videoKey`/`coverKey`/`imageKey`.** В ответе `videoUrl`, `cover` и `image` — подписанные
+   ссылки на час (для плеера и превью), а сохранять нужно «сырое» значение из
+   `videoKey` / `coverKey` / `imageKey`.
 4. **`status` считается на лету** из `opensAt` — отправлять его не нужно.

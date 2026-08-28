@@ -3,16 +3,14 @@ package ru.anyforms.edu.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import ru.anyforms.edu.dto.auth.AuthResponseDTO;
+import ru.anyforms.edu.dto.auth.RequestCodeDTO;
+import ru.anyforms.edu.dto.auth.VerifyCodeDTO;
 import ru.anyforms.edu.service.auth.AuthService;
 
 import java.util.Map;
@@ -21,37 +19,15 @@ import java.util.stream.Collectors;
 /** Вход по коду с почты: request-code → письмо → verify → JWT. */
 @AllArgsConstructor
 @RestController
-@RequestMapping("/api/public/auth")
+@RequestMapping("/api/auth")
 @Tag(name = "Auth", description = "Вход по коду с почты. JWT живёт месяц; у клиентов новый вход гасит старые токены")
 public class AuthController {
 
     private final AuthService authService;
 
-    @Data
-    @NoArgsConstructor
-    @lombok.AllArgsConstructor
-    @Builder
-    public static class RequestCodeDTO {
-        @NotBlank(message = "Не указан e-mail")
-        @Email(message = "Некорректный e-mail")
-        private String email;
-    }
-
-    @Data
-    @NoArgsConstructor
-    @lombok.AllArgsConstructor
-    @Builder
-    public static class VerifyDTO {
-        @NotBlank(message = "Не указан e-mail")
-        @Email(message = "Некорректный e-mail")
-        private String email;
-
-        @NotBlank(message = "Не указан код")
-        private String code;
-    }
-
     @Operation(summary = "Отправить код входа на почту",
-            description = "E-mail должен иметь доступ: админ (service_user) или клиент (student)")
+            description = "Доступ клиента: сначала своя база (student), незнакомый email проверяется "
+                    + "в anyforms-back (оплаченная покупка курса); админы берутся из service_user")
     @PostMapping("/request-code")
     public ResponseEntity<Map<String, String>> requestCode(@Valid @RequestBody RequestCodeDTO request) {
         authService.requestCode(request.getEmail());
@@ -61,7 +37,7 @@ public class AuthController {
     @Operation(summary = "Обменять код на JWT",
             description = "Ответ: token (Bearer для Authorize в Swagger), role (ADMIN | STUDENT), email")
     @PostMapping("/verify")
-    public ResponseEntity<AuthService.AuthResult> verify(@Valid @RequestBody VerifyDTO request) {
+    public ResponseEntity<AuthResponseDTO> verify(@Valid @RequestBody VerifyCodeDTO request) {
         return ResponseEntity.ok(authService.verify(request.getEmail(), request.getCode()));
     }
 

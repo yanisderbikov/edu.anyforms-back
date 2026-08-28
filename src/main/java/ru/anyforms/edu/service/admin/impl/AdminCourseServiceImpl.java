@@ -6,16 +6,21 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import ru.anyforms.edu.dto.admin.CourseRequestDTO;
+import ru.anyforms.edu.dto.admin.LessonFileRequestDTO;
 import ru.anyforms.edu.dto.admin.LessonRequestDTO;
 import ru.anyforms.edu.dto.admin.ModuleRequestDTO;
 import ru.anyforms.edu.model.course.Course;
 import ru.anyforms.edu.model.course.CourseModule;
 import ru.anyforms.edu.model.course.Lesson;
+import ru.anyforms.edu.model.course.LessonFile;
 import ru.anyforms.edu.repository.GetterCourse;
 import ru.anyforms.edu.repository.SaverCourse;
 import ru.anyforms.edu.service.admin.AdminCourseService;
+import ru.anyforms.edu.service.cleanup.LessonAssetCleaner;
 import ru.anyforms.edu.util.Ordering;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -24,6 +29,7 @@ class AdminCourseServiceImpl implements AdminCourseService {
 
     private final GetterCourse getterCourse;
     private final SaverCourse saverCourse;
+    private final LessonAssetCleaner assetCleaner;
 
     private Course requireCourse() {
         return getterCourse.getBySlug(Course.DEFAULT_SLUG)
@@ -57,13 +63,23 @@ class AdminCourseServiceImpl implements AdminCourseService {
     @Transactional
     public UUID createModule(ModuleRequestDTO request) {
         Course course = requireCourse();
-        CourseModule module = saverCourse.saveModule(CourseModule.builder()
+        CourseModule module = CourseModule.builder()
                 .course(course)
                 .ord(request.getOrder())
                 .title(request.getTitle())
                 .description(request.getDescription())
+                .imageUrl(request.getImageUrl())
+                .coverUrl(request.getCoverUrl())
+                .videoUrl(request.getVideoUrl())
+                .videoCoverUrl(request.getVideoCoverUrl())
                 .opensAt(request.getOpensAt())
-                .build());
+                .build();
+        // Модуль, созданный сразу открытым, не «открывается» — письма об открытии
+        // не шлём. Они уйдут, только если задана будущая дата и она наступит
+        if (module.isOpen()) {
+            module.setOpenEmailQueuedAt(Instant.now());
+        }
+        module = saverCourse.saveModule(module);
         resequenceModules(course.getId(), module.getId());
         return module.getId();
     }
@@ -72,12 +88,38 @@ class AdminCourseServiceImpl implements AdminCourseService {
     @Transactional
     public void updateModule(UUID moduleId, ModuleRequestDTO request) {
         CourseModule module = requireModule(moduleId);
+        String replacedImage = replaced(module.getImageUrl(), request.getImageUrl());
+        String replacedCover = replaced(module.getCoverUrl(), request.getCoverUrl());
+        String replacedVideo = replaced(module.getVideoUrl(), request.getVideoUrl());
+        String replacedVideoCover = replaced(module.getVideoCoverUrl(), request.getVideoCoverUrl());
         module.setOrd(request.getOrder());
         module.setTitle(request.getTitle());
         module.setDescription(request.getDescription());
+        module.setImageUrl(request.getImageUrl());
+        module.setCoverUrl(request.getCoverUrl());
+        module.setVideoUrl(request.getVideoUrl());
+        module.setVideoCoverUrl(request.getVideoCoverUrl());
         module.setOpensAt(request.getOpensAt());
+        // Дату открытия перенесли в будущее — модуль снова закрыт: когда дата
+        // наступит, объявим об открытии заново. Открытие руками (дата очищена или
+        // в прошлом) подхватит планировщик, если про модуль ещё не объявляли
+        if (!module.isOpen()) {
+            module.setOpenEmailQueuedAt(null);
+        }
         saverCourse.saveModule(module);
         resequenceModules(module.getCourse().getId(), moduleId);
+        if (replacedImage != null) {
+            assetCleaner.deleteAfterCommit(LessonAssetCleaner.Assets.ofCover(replacedImage));
+        }
+        if (replacedCover != null) {
+            assetCleaner.deleteAfterCommit(LessonAssetCleaner.Assets.ofCover(replacedCover));
+        }
+        if (replacedVideo != null) {
+            assetCleaner.deleteAfterCommit(LessonAssetCleaner.Assets.ofVideo(replacedVideo));
+        }
+        if (replacedVideoCover != null) {
+            assetCleaner.deleteAfterCommit(LessonAssetCleaner.Assets.ofCover(replacedVideoCover));
+        }
     }
 
     @Override
@@ -85,8 +127,17 @@ class AdminCourseServiceImpl implements AdminCourseService {
     public void deleteModule(UUID moduleId) {
         CourseModule module = requireModule(moduleId);
         UUID courseId = module.getCourse().getId();
+        List<LessonAssetCleaner.Assets> assets = new java.util.ArrayList<>(
+                getterCourse.getLessons(moduleId).stream()
+                        .map(LessonAssetCleaner.Assets::of)
+                        .toList());
+        assets.add(LessonAssetCleaner.Assets.ofCover(module.getImageUrl()));
+        assets.add(LessonAssetCleaner.Assets.ofCover(module.getCoverUrl()));
+        assets.add(LessonAssetCleaner.Assets.ofVideo(module.getVideoUrl()));
+        assets.add(LessonAssetCleaner.Assets.ofCover(module.getVideoCoverUrl()));
         saverCourse.deleteModule(module);
         resequenceModules(courseId, null);
+        assets.forEach(assetCleaner::deleteAfterCommit);
     }
 
     @Override
@@ -95,9 +146,10 @@ class AdminCourseServiceImpl implements AdminCourseService {
         Lesson lesson = saverCourse.saveLesson(Lesson.builder()
                 .module(requireModule(moduleId))
                 .ord(request.getOrder())
-                .title(request.getTitle())
+                .title(request.getTitle() == null ? "" : request.getTitle())
                 .description(request.getDescription())
                 .videoUrl(request.getVideoUrl())
+                .coverUrl(request.getCoverUrl())
                 .build());
         resequenceLessons(moduleId, lesson.getId());
         return lesson.getId();
@@ -107,12 +159,21 @@ class AdminCourseServiceImpl implements AdminCourseService {
     @Transactional
     public void updateLesson(UUID lessonId, LessonRequestDTO request) {
         Lesson lesson = requireLesson(lessonId);
+        String replacedVideo = replaced(lesson.getVideoUrl(), request.getVideoUrl());
+        String replacedCover = replaced(lesson.getCoverUrl(), request.getCoverUrl());
         lesson.setOrd(request.getOrder());
-        lesson.setTitle(request.getTitle());
+        lesson.setTitle(request.getTitle() == null ? "" : request.getTitle());
         lesson.setDescription(request.getDescription());
         lesson.setVideoUrl(request.getVideoUrl());
+        lesson.setCoverUrl(request.getCoverUrl());
         saverCourse.saveLesson(lesson);
         resequenceLessons(lesson.getModule().getId(), lessonId);
+        if (replacedVideo != null) {
+            assetCleaner.deleteAfterCommit(LessonAssetCleaner.Assets.ofVideo(replacedVideo));
+        }
+        if (replacedCover != null) {
+            assetCleaner.deleteAfterCommit(LessonAssetCleaner.Assets.ofCover(replacedCover));
+        }
     }
 
     @Override
@@ -120,8 +181,43 @@ class AdminCourseServiceImpl implements AdminCourseService {
     public void deleteLesson(UUID lessonId) {
         Lesson lesson = requireLesson(lessonId);
         UUID moduleId = lesson.getModule().getId();
+        LessonAssetCleaner.Assets assets = LessonAssetCleaner.Assets.of(lesson);
         saverCourse.deleteLesson(lesson);
         resequenceLessons(moduleId, null);
+        assetCleaner.deleteAfterCommit(assets);
+    }
+
+    @Override
+    @Transactional
+    public UUID addLessonFile(UUID lessonId, LessonFileRequestDTO request) {
+        LessonFile file = saverCourse.saveFile(LessonFile.builder()
+                .lesson(requireLesson(lessonId))
+                .name(request.getName())
+                .fileUrl(request.getFileUrl())
+                .sizeBytes(request.getSizeBytes())
+                .build());
+        return file.getId();
+    }
+
+    @Override
+    @Transactional
+    public void deleteLessonFile(UUID fileId) {
+        LessonFile file = getterCourse.getFileById(fileId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Файл не найден: " + fileId));
+        String fileUrl = file.getFileUrl();
+        saverCourse.deleteFile(file);
+        assetCleaner.deleteAfterCommit(LessonAssetCleaner.Assets.ofFile(fileUrl));
+    }
+
+    /**
+     * Старое значение поля, если оно действительно уходит из урока
+     * (заменили другим или очистили); null — менять нечего.
+     */
+    private String replaced(String was, String now) {
+        if (was == null || was.isBlank() || was.equals(now)) {
+            return null;
+        }
+        return was;
     }
 
     /** Модули выстраиваются подряд: 1, 2, 3… */

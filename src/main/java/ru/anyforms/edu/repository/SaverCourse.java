@@ -3,6 +3,7 @@ package ru.anyforms.edu.repository;
 import ru.anyforms.edu.model.course.Course;
 import ru.anyforms.edu.model.course.CourseModule;
 import ru.anyforms.edu.model.course.Lesson;
+import ru.anyforms.edu.model.course.LessonFile;
 
 import java.util.List;
 
@@ -14,11 +15,16 @@ public interface SaverCourse {
 
     Lesson saveLesson(Lesson lesson);
 
+    LessonFile saveFile(LessonFile file);
+
     List<CourseModule> saveModules(List<CourseModule> modules);
 
     List<Lesson> saveLessons(List<Lesson> lessons);
 
     void deleteModule(CourseModule module);
 
+    /** Мягкое удаление: проставляет deleted_at — строка и прогресс студентов остаются */
     void deleteLesson(Lesson lesson);
+
+    void deleteFile(LessonFile file);
 }

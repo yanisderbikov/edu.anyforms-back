@@ -39,9 +39,29 @@ public class CourseModule {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    /** Картинка карточки (16:9): ключ S3 или полный URL */
+    @Column(name = "image_url", columnDefinition = "TEXT")
+    private String imageUrl;
+
+    /** Обложка страницы модуля (широкий баннер): ключ S3 или полный URL */
+    @Column(name = "cover_url", columnDefinition = "TEXT")
+    private String coverUrl;
+
+    /** Вводное видео модуля: embed-ссылка Kinescope или ключ S3 */
+    @Column(name = "video_url", columnDefinition = "TEXT")
+    private String videoUrl;
+
+    /** Обложка видео модуля (постер до запуска): ключ S3 или полный URL */
+    @Column(name = "video_cover_url", columnDefinition = "TEXT")
+    private String videoCoverUrl;
+
     /** NULL = открыт; будущая дата = «Откроется N числа» */
     @Column(name = "opens_at")
     private LocalDate opensAt;
+
+    /** Когда поставили в очередь письма «модуль открыт»; NULL = об открытии ещё не объявляли */
+    @Column(name = "open_email_queued_at")
+    private Instant openEmailQueuedAt;
 
     @OneToMany(mappedBy = "module", fetch = FetchType.LAZY)
     @OrderBy("ord ASC")

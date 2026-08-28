@@ -9,24 +9,14 @@ import ru.anyforms.edu.repository.SaverServiceUser;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
+/** Админы платформы: читаются при входе, назначаются из админки аккаунтов. */
 @Component
 @AllArgsConstructor
 @Slf4j
 class ServiceUserManager implements GetterServiceUser, SaverServiceUser {
 
     private final ServiceUserRepo serviceUserRepo;
-
-    @Override
-    public List<ServiceUser> getAll() {
-        try {
-            return serviceUserRepo.findAll();
-        } catch (Exception e) {
-            log.error("getAll failed", e);
-            throw new RuntimeException("Database exception", e);
-        }
-    }
 
     @Override
     public Optional<ServiceUser> getByEmail(String email) {
@@ -39,11 +29,11 @@ class ServiceUserManager implements GetterServiceUser, SaverServiceUser {
     }
 
     @Override
-    public Optional<ServiceUser> getById(UUID id) {
+    public List<ServiceUser> getActive() {
         try {
-            return serviceUserRepo.findById(id);
+            return serviceUserRepo.findByActiveTrue();
         } catch (Exception e) {
-            log.error("getById failed", e);
+            log.error("getActive failed", e);
             throw new RuntimeException("Database exception", e);
         }
     }
@@ -54,16 +44,6 @@ class ServiceUserManager implements GetterServiceUser, SaverServiceUser {
             return serviceUserRepo.save(user);
         } catch (Exception e) {
             log.error("save failed", e);
-            throw new RuntimeException("Database exception", e);
-        }
-    }
-
-    @Override
-    public void delete(ServiceUser user) {
-        try {
-            serviceUserRepo.delete(user);
-        } catch (Exception e) {
-            log.error("delete failed", e);
             throw new RuntimeException("Database exception", e);
         }
     }

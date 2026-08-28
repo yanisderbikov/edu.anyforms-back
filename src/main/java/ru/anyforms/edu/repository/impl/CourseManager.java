@@ -6,9 +6,12 @@ import org.springframework.stereotype.Component;
 import ru.anyforms.edu.model.course.Course;
 import ru.anyforms.edu.model.course.CourseModule;
 import ru.anyforms.edu.model.course.Lesson;
+import ru.anyforms.edu.model.course.LessonFile;
 import ru.anyforms.edu.repository.GetterCourse;
 import ru.anyforms.edu.repository.SaverCourse;
 
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -21,6 +24,7 @@ class CourseManager implements GetterCourse, SaverCourse {
     private final CourseRepo courseRepo;
     private final CourseModuleRepo moduleRepo;
     private final LessonRepo lessonRepo;
+    private final LessonFileRepo fileRepo;
 
     @Override
     public Optional<Course> getBySlug(String slug) {
@@ -53,6 +57,16 @@ class CourseManager implements GetterCourse, SaverCourse {
     }
 
     @Override
+    public Optional<LessonFile> getFileById(UUID id) {
+        try {
+            return fileRepo.findById(id);
+        } catch (Exception e) {
+            log.error("getFileById failed", e);
+            throw new RuntimeException("Database exception", e);
+        }
+    }
+
+    @Override
     public List<CourseModule> getModules(UUID courseId) {
         try {
             return moduleRepo.findByCourseIdOrderByOrdAsc(courseId);
@@ -68,6 +82,28 @@ class CourseManager implements GetterCourse, SaverCourse {
             return lessonRepo.findByModuleIdOrderByOrdAsc(moduleId);
         } catch (Exception e) {
             log.error("getLessons failed", e);
+            throw new RuntimeException("Database exception", e);
+        }
+    }
+
+    @Override
+    public List<CourseModule> getModulesToAnnounceOpen(LocalDate today) {
+        try {
+            return moduleRepo.findToAnnounceOpen(today);
+        } catch (Exception e) {
+            log.error("getModulesToAnnounceOpen failed", e);
+            throw new RuntimeException("Database exception", e);
+        }
+    }
+
+    @Override
+    public boolean isAssetInUse(String urlOrKey) {
+        try {
+            return lessonRepo.countByVideoUrlOrCoverUrl(urlOrKey, urlOrKey) > 0
+                    || fileRepo.countAliveByFileUrl(urlOrKey) > 0
+                    || moduleRepo.countByAnyAsset(urlOrKey) > 0;
+        } catch (Exception e) {
+            log.error("isAssetInUse failed", e);
             throw new RuntimeException("Database exception", e);
         }
     }
@@ -123,6 +159,26 @@ class CourseManager implements GetterCourse, SaverCourse {
     }
 
     @Override
+    public LessonFile saveFile(LessonFile file) {
+        try {
+            return fileRepo.save(file);
+        } catch (Exception e) {
+            log.error("saveFile failed", e);
+            throw new RuntimeException("Database exception", e);
+        }
+    }
+
+    @Override
+    public void deleteFile(LessonFile file) {
+        try {
+            fileRepo.delete(file);
+        } catch (Exception e) {
+            log.error("deleteFile failed", e);
+            throw new RuntimeException("Database exception", e);
+        }
+    }
+
+    @Override
     public void deleteModule(CourseModule module) {
         try {
             moduleRepo.delete(module);
@@ -135,7 +191,10 @@ class CourseManager implements GetterCourse, SaverCourse {
     @Override
     public void deleteLesson(Lesson lesson) {
         try {
-            lessonRepo.delete(lesson);
+            // Мягко: строку не трогаем, иначе каскадом уедет прогресс студентов.
+            // Из выборок урок пропадёт сам — фильтр стоит на сущности (@SQLRestriction)
+            lesson.setDeletedAt(Instant.now());
+            lessonRepo.save(lesson);
         } catch (Exception e) {
             log.error("deleteLesson failed", e);
             throw new RuntimeException("Database exception", e);

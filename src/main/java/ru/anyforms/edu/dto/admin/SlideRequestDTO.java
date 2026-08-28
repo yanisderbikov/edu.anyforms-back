@@ -1,6 +1,5 @@
 package ru.anyforms.edu.dto.admin;
 
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,7 +23,7 @@ public class SlideRequestDTO {
 
     private String eyebrow;
 
-    @NotBlank(message = "Не указан заголовок слайда")
+    /** Может быть пустым: новый слайд создаётся без заголовка и заполняется после */
     private String title;
 
     private String body;

@@ -19,6 +19,8 @@ import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignReques
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.Duration;
 import java.util.UUID;
@@ -136,5 +138,33 @@ class S3Service implements S3FileStorage {
                 .getObjectRequest(getObjectRequest)
                 .build();
         return presigner.presignGetObject(presignRequest).url().toString();
+    }
+
+    @Override
+    public String presignedDownloadUrl(String key, String downloadName) {
+        S3Presigner presigner = s3PresignerProvider.getIfAvailable();
+        if (presigner == null) {
+            log.warn("S3 не настроен, не могу подписать ключ: {}", key);
+            return null;
+        }
+        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                .bucket(s3Static.getBucketName())
+                .key(key)
+                // S3 отдаст заголовок как есть — браузер скачает файл под исходным именем
+                .responseContentDisposition(attachmentDisposition(downloadName))
+                .build();
+        return presigner.presignGetObject(GetObjectPresignRequest.builder()
+                        .signatureDuration(PRESIGN_TTL)
+                        .getObjectRequest(getObjectRequest)
+                        .build())
+                .url().toString();
+    }
+
+    /** ASCII-запасное имя в filename, кириллица и прочий юникод — в filename* (RFC 5987) */
+    private static String attachmentDisposition(String name) {
+        if (name == null || name.isBlank()) return "attachment";
+        String fallback = name.replace("\"", "'").replaceAll("[^\\x20-\\x7E]", "_");
+        String encoded = URLEncoder.encode(name, StandardCharsets.UTF_8).replace("+", "%20");
+        return "attachment; filename=\"" + fallback + "\"; filename*=UTF-8''" + encoded;
     }
 }

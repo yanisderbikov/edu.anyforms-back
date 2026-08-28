@@ -21,13 +21,13 @@ public class SwaggerConfig {
     public OpenAPI openAPI() {
         return new OpenAPI()
                 .servers(List.of(new Server().url(urlBack)))
-                // Кнопка Authorize: вставить JWT из /api/public/auth/verify
+                // Кнопка Authorize: вставить JWT из /api/auth/verify
                 .components(new Components().addSecuritySchemes("Bearer",
                         new SecurityScheme()
                                 .type(SecurityScheme.Type.HTTP)
                                 .scheme("bearer")
                                 .bearerFormat("JWT")
-                                .description("JWT из ответа /api/public/auth/verify")))
+                                .description("JWT из ответа /api/auth/verify")))
                 .info(new Info()
                         .title("edu.anyforms")
                         .description("API учебной платформы anyforms. Вход: запросить код на почту, обменять на JWT, нажать Authorize.")
