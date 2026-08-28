@@ -19,6 +19,7 @@ import ru.anyforms.edu.service.admin.AdminCourseService;
 import ru.anyforms.edu.service.cleanup.LessonAssetCleaner;
 import ru.anyforms.edu.util.Ordering;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -62,7 +63,7 @@ class AdminCourseServiceImpl implements AdminCourseService {
     @Transactional
     public UUID createModule(ModuleRequestDTO request) {
         Course course = requireCourse();
-        CourseModule module = saverCourse.saveModule(CourseModule.builder()
+        CourseModule module = CourseModule.builder()
                 .course(course)
                 .ord(request.getOrder())
                 .title(request.getTitle())
@@ -72,7 +73,13 @@ class AdminCourseServiceImpl implements AdminCourseService {
                 .videoUrl(request.getVideoUrl())
                 .videoCoverUrl(request.getVideoCoverUrl())
                 .opensAt(request.getOpensAt())
-                .build());
+                .build();
+        // Модуль, созданный сразу открытым, не «открывается» — письма об открытии
+        // не шлём. Они уйдут, только если задана будущая дата и она наступит
+        if (module.isOpen()) {
+            module.setOpenEmailQueuedAt(Instant.now());
+        }
+        module = saverCourse.saveModule(module);
         resequenceModules(course.getId(), module.getId());
         return module.getId();
     }
@@ -93,6 +100,12 @@ class AdminCourseServiceImpl implements AdminCourseService {
         module.setVideoUrl(request.getVideoUrl());
         module.setVideoCoverUrl(request.getVideoCoverUrl());
         module.setOpensAt(request.getOpensAt());
+        // Дату открытия перенесли в будущее — модуль снова закрыт: когда дата
+        // наступит, объявим об открытии заново. Открытие руками (дата очищена или
+        // в прошлом) подхватит планировщик, если про модуль ещё не объявляли
+        if (!module.isOpen()) {
+            module.setOpenEmailQueuedAt(null);
+        }
         saverCourse.saveModule(module);
         resequenceModules(module.getCourse().getId(), moduleId);
         if (replacedImage != null) {

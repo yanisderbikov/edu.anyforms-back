@@ -11,6 +11,13 @@ public final class EmailTemplate {
         return load("templates/email-login-code.html").replace("%CODE%", esc(code));
     }
 
+    /** Письмо «модуль открыт» со ссылкой на страницу модуля. */
+    public static String getModuleOpenedEmail(String moduleTitle, String moduleUrl) {
+        return load("templates/email-module-opened.html")
+                .replace("%MODULE_TITLE%", esc(moduleTitle))
+                .replace("%MODULE_URL%", esc(moduleUrl));
+    }
+
     private static String esc(String s) {
         if (s == null) {
             return "";

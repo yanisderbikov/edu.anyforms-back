@@ -59,6 +59,10 @@ public class CourseModule {
     @Column(name = "opens_at")
     private LocalDate opensAt;
 
+    /** Когда поставили в очередь письма «модуль открыт»; NULL = об открытии ещё не объявляли */
+    @Column(name = "open_email_queued_at")
+    private Instant openEmailQueuedAt;
+
     @OneToMany(mappedBy = "module", fetch = FetchType.LAZY)
     @OrderBy("ord ASC")
     @Builder.Default
