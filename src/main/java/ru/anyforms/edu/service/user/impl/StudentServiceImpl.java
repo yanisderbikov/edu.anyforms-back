@@ -6,6 +6,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import ru.anyforms.edu.dto.admin.StudentDTO;
 import ru.anyforms.edu.dto.admin.StudentRequestDTO;
+import ru.anyforms.edu.dto.admin.StudentsBulkRequestDTO;
+import ru.anyforms.edu.dto.admin.StudentsBulkResultDTO;
 import ru.anyforms.edu.model.Role;
 import ru.anyforms.edu.model.user.ServiceUser;
 import ru.anyforms.edu.model.user.Student;
@@ -15,14 +17,21 @@ import ru.anyforms.edu.repository.SaverServiceUser;
 import ru.anyforms.edu.repository.SaverStudent;
 import ru.anyforms.edu.service.user.StudentService;
 
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
 class StudentServiceImpl implements StudentService {
+
+    /** Тот же смысл, что у @Email на одиночной выдаче: список валидируем сами, построчно */
+    private static final Pattern EMAIL = Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
+    private static final String DEFAULT_PLAN = "SELF";
 
     private final GetterStudent getterStudent;
     private final SaverStudent saverStudent;
@@ -65,6 +74,49 @@ class StudentServiceImpl implements StudentService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Клиент уже существует: " + email);
         }
         return toDTO(saverStudent.save(Student.builder().email(email).build()));
+    }
+
+    /**
+     * Массовый импорт. Уже заведённых не трогаем совсем: перезапись оживила бы
+     * аккаунты, отключённые вручную (их не возвращает даже покупка), и сбила бы
+     * персональный формат. Что пропустили — возвращаем админу списком.
+     */
+    @Override
+    public StudentsBulkResultDTO createBulk(StudentsBulkRequestDTO request) {
+        String plan = request.getPlan() == null || request.getPlan().isBlank()
+                ? DEFAULT_PLAN
+                : request.getPlan();
+
+        List<String> invalid = new ArrayList<>();
+        Set<String> candidates = new LinkedHashSet<>();
+        for (String raw : request.getEmails()) {
+            if (raw == null || raw.isBlank()) {
+                continue;
+            }
+            String email = ServiceUser.normalizeEmail(raw);
+            if (EMAIL.matcher(email).matches()) {
+                candidates.add(email);
+            } else {
+                invalid.add(raw.trim());
+            }
+        }
+
+        // Один запрос вместо проверки каждого email по отдельности
+        Set<String> known = getterStudent.getAll().stream()
+                .map(Student::getEmail)
+                .collect(Collectors.toSet());
+
+        List<String> existing = new ArrayList<>();
+        int created = 0;
+        for (String email : candidates) {
+            if (known.contains(email)) {
+                existing.add(email);
+                continue;
+            }
+            saverStudent.save(Student.builder().email(email).plan(plan).build());
+            created++;
+        }
+        return new StudentsBulkResultDTO(created, existing, invalid);
     }
 
     @Override

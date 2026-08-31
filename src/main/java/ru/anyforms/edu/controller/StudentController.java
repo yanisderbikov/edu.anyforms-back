@@ -16,6 +16,8 @@ import ru.anyforms.edu.dto.admin.StudentDTO;
 import ru.anyforms.edu.dto.admin.StudentPlanRequestDTO;
 import ru.anyforms.edu.dto.admin.StudentRequestDTO;
 import ru.anyforms.edu.dto.admin.StudentRoleRequestDTO;
+import ru.anyforms.edu.dto.admin.StudentsBulkRequestDTO;
+import ru.anyforms.edu.dto.admin.StudentsBulkResultDTO;
 import ru.anyforms.edu.service.user.StudentService;
 
 import java.util.List;
@@ -43,6 +45,12 @@ public class StudentController {
     @PostMapping
     public ResponseEntity<StudentDTO> create(@Valid @RequestBody StudentRequestDTO request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(studentService.create(request));
+    }
+
+    @Operation(summary = "Дать доступ списком email — уже заведённых не меняет")
+    @PostMapping("/bulk")
+    public ResponseEntity<StudentsBulkResultDTO> createBulk(@Valid @RequestBody StudentsBulkRequestDTO request) {
+        return ResponseEntity.ok(studentService.createBulk(request));
     }
 
     @Operation(summary = "Включить/отключить доступ (отключённого не вернёт даже покупка)")
