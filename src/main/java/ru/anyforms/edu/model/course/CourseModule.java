@@ -6,12 +6,11 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-/** Модуль курса. Открыт, если opensAt == null или дата уже наступила. */
+/** Модуль курса. Открыт, если opensAt == null или момент открытия уже наступил. */
 @Entity
 @Table(name = "course_module")
 @Getter
@@ -55,9 +54,9 @@ public class CourseModule {
     @Column(name = "video_cover_url", columnDefinition = "TEXT")
     private String videoCoverUrl;
 
-    /** NULL = открыт; будущая дата = «Откроется N числа» */
+    /** NULL = открыт; будущий момент = «Откроется N числа в ЧЧ:ММ». Задаётся в МСК, см. MskTime */
     @Column(name = "opens_at")
-    private LocalDate opensAt;
+    private Instant opensAt;
 
     /** Когда поставили в очередь письма «модуль открыт»; NULL = об открытии ещё не объявляли */
     @Column(name = "open_email_queued_at")
@@ -77,6 +76,6 @@ public class CourseModule {
     private Instant updatedAt;
 
     public boolean isOpen() {
-        return opensAt == null || !opensAt.isAfter(LocalDate.now());
+        return opensAt == null || !opensAt.isAfter(Instant.now());
     }
 }

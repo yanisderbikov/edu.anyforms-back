@@ -40,6 +40,7 @@ public record CourseResponseDTO(
             /** Сырое значение из БД — только в админском ответе */
             String videoCoverKey,
             String status,
+            /** Московское время открытия «2026-09-01T14:00»; null = открыт сразу */
             String opensAt,
             /** Сколько уроков в модуле — для карточки на главной */
             int lessonsCount,

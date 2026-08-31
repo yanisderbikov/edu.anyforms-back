@@ -7,7 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /** Создание/обновление модуля из админки. */
 @Data
@@ -36,6 +36,6 @@ public class ModuleRequestDTO {
     /** Обложка видео модуля (постер до запуска): ключ S3 или полный URL */
     private String videoCoverUrl;
 
-    /** null = модуль открыт */
-    private LocalDate opensAt;
+    /** Московское время открытия, «2026-09-01T14:00»; null = модуль открыт */
+    private LocalDateTime opensAt;
 }

@@ -11,7 +11,6 @@ import ru.anyforms.edu.repository.GetterCourse;
 import ru.anyforms.edu.repository.SaverCourse;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -87,9 +86,9 @@ class CourseManager implements GetterCourse, SaverCourse {
     }
 
     @Override
-    public List<CourseModule> getModulesToAnnounceOpen(LocalDate today) {
+    public List<CourseModule> getModulesToAnnounceOpen(Instant now) {
         try {
-            return moduleRepo.findToAnnounceOpen(today);
+            return moduleRepo.findToAnnounceOpen(now);
         } catch (Exception e) {
             log.error("getModulesToAnnounceOpen failed", e);
             throw new RuntimeException("Database exception", e);

@@ -14,6 +14,7 @@ import ru.anyforms.edu.repository.GetterStudent;
 import ru.anyforms.edu.repository.ProgressStore;
 import ru.anyforms.edu.service.course.CourseService;
 import ru.anyforms.edu.service.s3.S3FileStorage;
+import ru.anyforms.edu.util.MskTime;
 
 import java.util.List;
 import java.util.Set;
@@ -104,7 +105,7 @@ class CourseServiceImpl implements CourseService {
                 open || admin ? s3FileStorage.resolveUrl(module.getVideoCoverUrl()) : null,
                 admin ? module.getVideoCoverUrl() : null,
                 open ? "open" : "locked",
-                module.getOpensAt() == null ? null : module.getOpensAt().toString(),
+                MskTime.format(module.getOpensAt()),
                 moduleLessons.size(),
                 done,
                 lessons
