@@ -22,7 +22,11 @@ public class ModuleRequestDTO {
     @NotBlank(message = "Не указано название модуля")
     private String title;
 
+    /** Превью карточки на главном экране */
     private String description;
+
+    /** Текст под вводным видео на странице модуля */
+    private String videoDescription;
 
     /** Картинка карточки (16:9): ключ S3 или полный URL */
     private String imageUrl;

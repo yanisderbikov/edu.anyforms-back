@@ -165,6 +165,12 @@ class AuthServiceImpl implements AuthService {
             Student student = getterStudent.getByEmail(email).orElseThrow();
             sessionId = UUID.randomUUID();
             student.setCurrentSessionId(sessionId);
+            // Вход — точно «был на платформе»: отмечаем сразу, не дожидаясь первого запроса
+            Instant now = Instant.now();
+            student.setLastSeenAt(now);
+            if (student.getFirstSeenAt() == null) {
+                student.setFirstSeenAt(now);
+            }
             saverStudent.save(student);
         }
 

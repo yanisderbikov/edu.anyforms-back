@@ -69,6 +69,7 @@ class AdminCourseServiceImpl implements AdminCourseService {
                 .ord(request.getOrder())
                 .title(request.getTitle())
                 .description(request.getDescription())
+                .videoDescription(request.getVideoDescription())
                 .imageUrl(request.getImageUrl())
                 .coverUrl(request.getCoverUrl())
                 .videoUrl(request.getVideoUrl())
@@ -96,6 +97,7 @@ class AdminCourseServiceImpl implements AdminCourseService {
         module.setOrd(request.getOrder());
         module.setTitle(request.getTitle());
         module.setDescription(request.getDescription());
+        module.setVideoDescription(request.getVideoDescription());
         module.setImageUrl(request.getImageUrl());
         module.setCoverUrl(request.getCoverUrl());
         module.setVideoUrl(request.getVideoUrl());

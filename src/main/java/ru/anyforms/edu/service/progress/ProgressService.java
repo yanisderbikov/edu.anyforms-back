@@ -11,5 +11,8 @@ public interface ProgressService {
     /** Возвращает актуальный прогресс, чтобы клиенту не нужен был повторный GET */
     ProgressDTO finishOnboarding(String email, boolean admin);
 
+    /** Первый запуск видео урока. Идемпотентно: повторный вызов ничего не меняет */
+    ProgressDTO startLesson(String email, boolean admin, UUID lessonId);
+
     ProgressDTO completeLesson(String email, boolean admin, UUID lessonId);
 }

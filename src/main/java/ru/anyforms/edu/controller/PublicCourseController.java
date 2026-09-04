@@ -27,6 +27,11 @@ public class PublicCourseController {
 
     private final CourseService courseService;
 
+    private static boolean isAdmin(Authentication auth) {
+        return auth.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+    }
+
     @Operation(summary = "Курс и превью модулей",
             description = "Шапка курса, ссылки поддержки и модули без уроков — только счётчики "
                     + "lessonsCount/lessonsDone для карточек. Уроки берутся по одному модулю",
@@ -37,12 +42,14 @@ public class PublicCourseController {
     }
 
     @Operation(summary = "Один модуль с уроками",
-            description = "Уроки закрытого модуля не отдаются: приходит статус locked и пустой список",
+            description = "Студенту уроки закрытого модуля не отдаются: приходит статус locked и пустой "
+                    + "список. Админу закрытый модуль приходит как открытый — проверить страницу до даты открытия",
             security = @SecurityRequirement(name = "Bearer"))
     @GetMapping("/modules/{moduleId}")
     public ResponseEntity<CourseResponseDTO.ModuleDTO> getModule(Authentication authentication,
                                                                  @PathVariable UUID moduleId) {
-        return ResponseEntity.ok(courseService.getPublicModule(authentication.getName(), moduleId));
+        return ResponseEntity.ok(courseService.getPublicModule(
+                authentication.getName(), isAdmin(authentication), moduleId));
     }
 
     @ExceptionHandler(ResponseStatusException.class)
