@@ -49,6 +49,8 @@ public record CourseResponseDTO(
             int lessonsCount,
             /** Сколько из них досмотрел этот студент (у админа всегда 0) */
             int lessonsDone,
+            /** Материалы модуля — по тем же правилам, что уроки: пусто в списке и у закрытого */
+            List<FileDTO> files,
             /** Уроки: пусто в списке модулей, заполнено при запросе одного модуля и в админке */
             List<LessonDTO> lessons
     ) {
@@ -66,11 +68,12 @@ public record CourseResponseDTO(
             /** Сырое значение из БД — только в админском ответе */
             String coverKey,
             /** Файлы-материалы урока в порядке добавления */
-            List<LessonFileDTO> files
+            List<FileDTO> files
     ) {
     }
 
-    public record LessonFileDTO(
+    /** Скачиваемый материал урока или модуля */
+    public record FileDTO(
             String id,
             /** Имя, под которым файл скачается */
             String name,

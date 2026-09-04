@@ -105,6 +105,13 @@ class CourseServiceImpl implements CourseService {
                 ? moduleLessons.stream().map(l -> toLessonDTO(l, admin)).toList()
                 : List.of();
 
+        // Материалы модуля — по тем же правилам, что уроки
+        List<CourseResponseDTO.FileDTO> files = withLessons && (open || admin)
+                ? module.getFiles().stream()
+                        .map(f -> toFileDTO(f.getId(), f.getName(), f.getFileUrl(), f.getSizeBytes()))
+                        .toList()
+                : List.of();
+
         int done = (int) moduleLessons.stream()
                 .filter(l -> completed.contains(l.getId()))
                 .count();
@@ -129,17 +136,14 @@ class CourseServiceImpl implements CourseService {
                 MskTime.format(module.getOpensAt()),
                 moduleLessons.size(),
                 done,
+                files,
                 lessons
         );
     }
 
     private CourseResponseDTO.LessonDTO toLessonDTO(Lesson lesson, boolean admin) {
-        List<CourseResponseDTO.LessonFileDTO> files = lesson.getFiles().stream()
-                .map(f -> new CourseResponseDTO.LessonFileDTO(
-                        f.getId().toString(),
-                        f.getName(),
-                        s3FileStorage.resolveDownloadUrl(f.getFileUrl(), f.getName()),
-                        f.getSizeBytes()))
+        List<CourseResponseDTO.FileDTO> files = lesson.getFiles().stream()
+                .map(f -> toFileDTO(f.getId(), f.getName(), f.getFileUrl(), f.getSizeBytes()))
                 .toList();
 
         return new CourseResponseDTO.LessonDTO(
@@ -152,5 +156,14 @@ class CourseServiceImpl implements CourseService {
                 admin ? lesson.getCoverUrl() : null,
                 files
         );
+    }
+
+    /** Ссылка на скачивание подписана бэкендом — браузер сохранит файл под исходным именем */
+    private CourseResponseDTO.FileDTO toFileDTO(UUID id, String name, String fileUrl, Long sizeBytes) {
+        return new CourseResponseDTO.FileDTO(
+                id.toString(),
+                name,
+                s3FileStorage.resolveDownloadUrl(fileUrl, name),
+                sizeBytes);
     }
 }

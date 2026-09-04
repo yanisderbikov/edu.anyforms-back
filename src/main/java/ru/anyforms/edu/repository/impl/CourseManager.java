@@ -7,6 +7,7 @@ import ru.anyforms.edu.model.course.Course;
 import ru.anyforms.edu.model.course.CourseModule;
 import ru.anyforms.edu.model.course.Lesson;
 import ru.anyforms.edu.model.course.LessonFile;
+import ru.anyforms.edu.model.course.ModuleFile;
 import ru.anyforms.edu.repository.GetterCourse;
 import ru.anyforms.edu.repository.SaverCourse;
 
@@ -24,6 +25,7 @@ class CourseManager implements GetterCourse, SaverCourse {
     private final CourseModuleRepo moduleRepo;
     private final LessonRepo lessonRepo;
     private final LessonFileRepo fileRepo;
+    private final ModuleFileRepo moduleFileRepo;
 
     @Override
     public Optional<Course> getBySlug(String slug) {
@@ -66,6 +68,16 @@ class CourseManager implements GetterCourse, SaverCourse {
     }
 
     @Override
+    public Optional<ModuleFile> getModuleFileById(UUID id) {
+        try {
+            return moduleFileRepo.findById(id);
+        } catch (Exception e) {
+            log.error("getModuleFileById failed", e);
+            throw new RuntimeException("Database exception", e);
+        }
+    }
+
+    @Override
     public List<CourseModule> getModules(UUID courseId) {
         try {
             return moduleRepo.findByCourseIdOrderByOrdAsc(courseId);
@@ -100,7 +112,8 @@ class CourseManager implements GetterCourse, SaverCourse {
         try {
             return lessonRepo.countByVideoUrlOrCoverUrl(urlOrKey, urlOrKey) > 0
                     || fileRepo.countAliveByFileUrl(urlOrKey) > 0
-                    || moduleRepo.countByAnyAsset(urlOrKey) > 0;
+                    || moduleRepo.countByAnyAsset(urlOrKey) > 0
+                    || moduleFileRepo.countByFileUrl(urlOrKey) > 0;
         } catch (Exception e) {
             log.error("isAssetInUse failed", e);
             throw new RuntimeException("Database exception", e);
@@ -173,6 +186,26 @@ class CourseManager implements GetterCourse, SaverCourse {
             fileRepo.delete(file);
         } catch (Exception e) {
             log.error("deleteFile failed", e);
+            throw new RuntimeException("Database exception", e);
+        }
+    }
+
+    @Override
+    public ModuleFile saveModuleFile(ModuleFile file) {
+        try {
+            return moduleFileRepo.save(file);
+        } catch (Exception e) {
+            log.error("saveModuleFile failed", e);
+            throw new RuntimeException("Database exception", e);
+        }
+    }
+
+    @Override
+    public void deleteModuleFile(ModuleFile file) {
+        try {
+            moduleFileRepo.delete(file);
+        } catch (Exception e) {
+            log.error("deleteModuleFile failed", e);
             throw new RuntimeException("Database exception", e);
         }
     }

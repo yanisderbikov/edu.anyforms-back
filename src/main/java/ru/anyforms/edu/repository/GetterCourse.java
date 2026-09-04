@@ -4,6 +4,7 @@ import ru.anyforms.edu.model.course.Course;
 import ru.anyforms.edu.model.course.CourseModule;
 import ru.anyforms.edu.model.course.Lesson;
 import ru.anyforms.edu.model.course.LessonFile;
+import ru.anyforms.edu.model.course.ModuleFile;
 
 import java.time.Instant;
 import java.util.List;
@@ -20,6 +21,8 @@ public interface GetterCourse {
 
     Optional<LessonFile> getFileById(UUID id);
 
+    Optional<ModuleFile> getModuleFileById(UUID id);
+
     /** Для перенумерации: модули курса по возрастанию порядка */
     List<CourseModule> getModules(UUID courseId);
 
@@ -31,7 +34,8 @@ public interface GetterCourse {
 
     /**
      * Ссылается ли на этот файл (ключ S3 или ссылка Kinescope) кто-то ещё:
-     * живой урок видео/обложкой либо запись материала. Удалённые уроки не считаются.
+     * живой урок видео/обложкой, модуль медиа-полями либо запись материала
+     * урока или модуля. Удалённые уроки не считаются.
      */
     boolean isAssetInUse(String urlOrKey);
 }

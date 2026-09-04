@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import ru.anyforms.edu.dto.admin.CourseRequestDTO;
 import ru.anyforms.edu.dto.admin.KinescopeUploadRequestDTO;
-import ru.anyforms.edu.dto.admin.LessonFileRequestDTO;
+import ru.anyforms.edu.dto.admin.FileRequestDTO;
 import ru.anyforms.edu.dto.admin.LessonRequestDTO;
 import ru.anyforms.edu.dto.admin.ModuleRequestDTO;
 import ru.anyforms.edu.dto.admin.PresignUploadRequestDTO;
@@ -102,7 +102,7 @@ public class AdminCourseController {
                     + "Количество файлов у урока не ограничено")
     @PostMapping("/lessons/{lessonId}/files")
     public ResponseEntity<Map<String, String>> addLessonFile(@PathVariable UUID lessonId,
-                                                             @Valid @RequestBody LessonFileRequestDTO request) {
+                                                             @Valid @RequestBody FileRequestDTO request) {
         UUID id = adminCourseService.addLessonFile(lessonId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("id", id.toString()));
     }
@@ -111,6 +111,23 @@ public class AdminCourseController {
     @DeleteMapping("/files/{fileId}")
     public ResponseEntity<Void> deleteLessonFile(@PathVariable UUID fileId) {
         adminCourseService.deleteLessonFile(fileId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Прикрепить файл к модулю",
+            description = "Как у урока: сам файл уже в S3 (см. presign-upload) — здесь сохраняем ключ, имя и размер. "
+                    + "Студент видит файлы под описанием модуля")
+    @PostMapping("/modules/{moduleId}/files")
+    public ResponseEntity<Map<String, String>> addModuleFile(@PathVariable UUID moduleId,
+                                                             @Valid @RequestBody FileRequestDTO request) {
+        UUID id = adminCourseService.addModuleFile(moduleId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("id", id.toString()));
+    }
+
+    @Operation(summary = "Открепить файл от модуля")
+    @DeleteMapping("/module-files/{fileId}")
+    public ResponseEntity<Void> deleteModuleFile(@PathVariable UUID fileId) {
+        adminCourseService.deleteModuleFile(fileId);
         return ResponseEntity.noContent().build();
     }
 
