@@ -9,14 +9,17 @@ import ru.anyforms.edu.dto.course.CourseResponseDTO;
 import ru.anyforms.edu.model.course.Course;
 import ru.anyforms.edu.model.course.CourseModule;
 import ru.anyforms.edu.model.course.Lesson;
+import ru.anyforms.edu.model.user.Student;
 import ru.anyforms.edu.repository.GetterCourse;
 import ru.anyforms.edu.repository.GetterStudent;
 import ru.anyforms.edu.repository.ProgressStore;
+import ru.anyforms.edu.service.activity.ActivityTracker;
 import ru.anyforms.edu.service.course.CourseService;
 import ru.anyforms.edu.service.s3.S3FileStorage;
 import ru.anyforms.edu.util.MskTime;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -28,6 +31,7 @@ class CourseServiceImpl implements CourseService {
     private final GetterStudent getterStudent;
     private final ProgressStore progressStore;
     private final S3FileStorage s3FileStorage;
+    private final ActivityTracker activityTracker;
 
     @Override
     @Transactional(readOnly = true)
@@ -37,11 +41,20 @@ class CourseServiceImpl implements CourseService {
 
     @Override
     @Transactional(readOnly = true)
-    public CourseResponseDTO.ModuleDTO getPublicModule(String email, UUID moduleId) {
+    public CourseResponseDTO.ModuleDTO getPublicModule(String email, boolean admin, UUID moduleId) {
         CourseModule module = getterCourse.getModuleById(moduleId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Модуль не найден: " + moduleId));
-        return toModuleDTO(module, false, true, completedIds(email));
+        Optional<Student> student = getterStudent.getByEmail(email);
+        // Заход студента на открытый модуль — след для аналитики «открыл, но не начал».
+        // Админ не студент, закрытый модуль содержимого не показывает — их не считаем
+        if (!admin && module.isOpen()) {
+            student.ifPresent(s -> activityTracker.moduleVisited(s.getId(), module.getId()));
+        }
+        // Админу страница модуля открыта и до даты открытия — проверить её глазами
+        // студента. Статус тоже приходит open, иначе фронт спрячет содержимое.
+        // Список модулей на главной и админка статус не подменяют
+        return toModuleDTO(module, false, true, admin, completedIds(student));
     }
 
     @Override
@@ -52,8 +65,12 @@ class CourseServiceImpl implements CourseService {
 
     /** Досмотренные уроки этого студента; у админа и незнакомого email — пусто. */
     private Set<UUID> completedIds(String email) {
-        return getterStudent.getByEmail(email)
-                .map(student -> Set.copyOf(progressStore.getCompletedLessonIds(student.getId())))
+        return completedIds(getterStudent.getByEmail(email));
+    }
+
+    private Set<UUID> completedIds(Optional<Student> student) {
+        return student
+                .map(s -> Set.copyOf(progressStore.getCompletedLessonIds(s.getId())))
                 .orElseGet(Set::of);
     }
 
@@ -62,7 +79,7 @@ class CourseServiceImpl implements CourseService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Курс не найден"));
 
         List<CourseResponseDTO.ModuleDTO> modules = course.getModules().stream()
-                .map(m -> toModuleDTO(m, admin, withLessons, completed))
+                .map(m -> toModuleDTO(m, admin, withLessons, false, completed))
                 .toList();
 
         return new CourseResponseDTO(
@@ -75,9 +92,11 @@ class CourseServiceImpl implements CourseService {
         );
     }
 
+    /** adminPreview — админ смотрит страницу модуля до даты открытия: отдаём его как открытый */
     private CourseResponseDTO.ModuleDTO toModuleDTO(CourseModule module, boolean admin,
-                                                    boolean withLessons, Set<UUID> completed) {
-        boolean open = module.isOpen();
+                                                    boolean withLessons, boolean adminPreview,
+                                                    Set<UUID> completed) {
+        boolean open = module.isOpen() || adminPreview;
         List<Lesson> moduleLessons = module.getLessons();
 
         // Уроки нужны только на странице модуля и в админке; у закрытого модуля
@@ -95,6 +114,8 @@ class CourseServiceImpl implements CourseService {
                 module.getOrd(),
                 module.getTitle(),
                 module.getDescription(),
+                // Текст страницы модуля — как видео и уроки, у закрытого наружу не отдаём
+                open || admin ? module.getVideoDescription() : null,
                 s3FileStorage.resolveUrl(module.getImageUrl()),
                 admin ? module.getImageUrl() : null,
                 s3FileStorage.resolveUrl(module.getCoverUrl()),

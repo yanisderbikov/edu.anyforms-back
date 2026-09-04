@@ -45,6 +45,13 @@ public class MeController {
         return ResponseEntity.ok(progressService.finishOnboarding(auth.getName(), isAdmin(auth)));
     }
 
+    @Operation(summary = "Урок начат",
+            description = "Первый запуск видео. Идемпотентно: повторный вызов — не ошибка. Возвращает актуальный прогресс")
+    @PostMapping("/lessons/{lessonId}/start")
+    public ResponseEntity<ProgressDTO> startLesson(Authentication auth, @PathVariable UUID lessonId) {
+        return ResponseEntity.ok(progressService.startLesson(auth.getName(), isAdmin(auth), lessonId));
+    }
+
     @Operation(summary = "Урок просмотрен полностью",
             description = "Идемпотентно: повторный вызов — не ошибка. Возвращает актуальный прогресс")
     @PostMapping("/lessons/{lessonId}/complete")

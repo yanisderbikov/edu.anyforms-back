@@ -35,8 +35,13 @@ public class CourseModule {
     @Column(nullable = false)
     private String title;
 
+    /** Превью карточки на главном экране */
     @Column(columnDefinition = "TEXT")
     private String description;
+
+    /** Текст под вводным видео на странице модуля (без видео — сразу под заголовком) */
+    @Column(name = "video_description", columnDefinition = "TEXT")
+    private String videoDescription;
 
     /** Картинка карточки (16:9): ключ S3 или полный URL */
     @Column(name = "image_url", columnDefinition = "TEXT")

@@ -58,16 +58,32 @@ class ProgressServiceImpl implements ProgressService {
 
     @Override
     @Transactional
+    public ProgressDTO startLesson(String email, boolean admin, UUID lessonId) {
+        if (admin) {
+            return getProgress(email, true);
+        }
+        Student student = requireStudent(email);
+        requireLesson(lessonId);
+        progressStore.markStarted(student.getId(), lessonId);
+        return toDTO(student);
+    }
+
+    @Override
+    @Transactional
     public ProgressDTO completeLesson(String email, boolean admin, UUID lessonId) {
         if (admin) {
             return getProgress(email, true);
         }
         Student student = requireStudent(email);
+        requireLesson(lessonId);
+        progressStore.markCompleted(student.getId(), lessonId);
+        return toDTO(student);
+    }
+
+    private void requireLesson(UUID lessonId) {
         getterCourse.getLessonById(lessonId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Урок не найден: " + lessonId));
-        progressStore.markCompleted(student.getId(), lessonId);
-        return toDTO(student);
     }
 
     private ProgressDTO toDTO(Student student) {

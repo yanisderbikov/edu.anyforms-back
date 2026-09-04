@@ -22,7 +22,10 @@ public record CourseResponseDTO(
             String id,
             int order,
             String title,
+            /** Превью карточки на главном экране */
             String description,
+            /** Текст под вводным видео на странице модуля; студенту отдаётся только у открытого */
+            String videoDescription,
             /** Подписанная ссылка на картинку карточки (16:9) */
             String image,
             /** Сырое значение из БД — только в админском ответе */

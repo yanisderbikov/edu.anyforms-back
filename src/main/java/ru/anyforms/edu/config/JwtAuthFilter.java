@@ -5,6 +5,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -13,7 +14,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 import ru.anyforms.edu.model.Role;
+import ru.anyforms.edu.model.user.Student;
 import ru.anyforms.edu.repository.GetterStudent;
+import ru.anyforms.edu.repository.SaverStudent;
 import ru.anyforms.edu.service.auth.JwtTokenService;
 
 import java.io.IOException;
@@ -23,6 +26,7 @@ import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private static final String HEADER = "Authorization";
@@ -30,6 +34,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtTokenService jwtTokenService;
     private final GetterStudent getterStudent;
+    private final SaverStudent saverStudent;
 
     @Override
     protected void doFilterInternal(
@@ -54,6 +59,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
      * «Одно устройство» для студентов: токен живёт, пока его sid совпадает
      * с current_session_id. Новый вход меняет sid — старый токен гаснет.
      * На админов не распространяется.
+     * Заодно отмечаем активность: запрос с живым токеном = студент на платформе.
      */
     private boolean sessionAlive(String email, Role role, UUID sid) {
         if (role != Role.STUDENT) {
@@ -62,9 +68,23 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         if (sid == null) {
             return false;
         }
-        return getterStudent.getByEmail(email)
-                .map(s -> Boolean.TRUE.equals(s.getActive()) && sid.equals(s.getCurrentSessionId()))
-                .orElse(false);
+        Student student = getterStudent.getByEmail(email).orElse(null);
+        if (student == null
+                || !Boolean.TRUE.equals(student.getActive())
+                || !sid.equals(student.getCurrentSessionId())) {
+            return false;
+        }
+        touchSeen(student);
+        return true;
+    }
+
+    /** Аналитика — не повод ронять запрос: сбой отметки логируем и идём дальше */
+    private void touchSeen(Student student) {
+        try {
+            saverStudent.touchSeen(student);
+        } catch (Exception e) {
+            log.warn("Не удалось отметить активность {}", student.getEmail(), e);
+        }
     }
 
     private String extractToken(HttpServletRequest request) {
