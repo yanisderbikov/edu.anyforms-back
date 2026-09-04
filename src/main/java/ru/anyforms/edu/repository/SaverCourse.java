@@ -4,6 +4,7 @@ import ru.anyforms.edu.model.course.Course;
 import ru.anyforms.edu.model.course.CourseModule;
 import ru.anyforms.edu.model.course.Lesson;
 import ru.anyforms.edu.model.course.LessonFile;
+import ru.anyforms.edu.model.course.ModuleFile;
 
 import java.util.List;
 
@@ -17,6 +18,8 @@ public interface SaverCourse {
 
     LessonFile saveFile(LessonFile file);
 
+    ModuleFile saveModuleFile(ModuleFile file);
+
     List<CourseModule> saveModules(List<CourseModule> modules);
 
     List<Lesson> saveLessons(List<Lesson> lessons);
@@ -27,4 +30,6 @@ public interface SaverCourse {
     void deleteLesson(Lesson lesson);
 
     void deleteFile(LessonFile file);
+
+    void deleteModuleFile(ModuleFile file);
 }

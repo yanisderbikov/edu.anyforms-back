@@ -6,12 +6,12 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/** Прикрепление файла к уроку: сам файл уже в S3 (см. presign-upload). */
+/** Прикрепление файла к уроку или модулю: сам файл уже в S3 (см. presign-upload). */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class LessonFileRequestDTO {
+public class FileRequestDTO {
 
     /** Исходное имя файла — под ним студент его скачает */
     @NotBlank(message = "Не указано имя файла")

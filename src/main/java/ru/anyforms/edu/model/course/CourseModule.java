@@ -72,6 +72,12 @@ public class CourseModule {
     @Builder.Default
     private List<Lesson> lessons = new ArrayList<>();
 
+    /** Материалы модуля — скачиваемые файлы под описанием, в порядке добавления */
+    @OneToMany(mappedBy = "module", fetch = FetchType.LAZY)
+    @OrderBy("createdAt ASC, id ASC")
+    @Builder.Default
+    private List<ModuleFile> files = new ArrayList<>();
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

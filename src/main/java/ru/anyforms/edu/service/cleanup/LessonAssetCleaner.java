@@ -63,6 +63,11 @@ public class LessonAssetCleaner {
             return new Assets(null, null, fileUrl == null ? List.of() : List.of(fileUrl));
         }
 
+        /** Материалы удаляемого модуля. */
+        public static Assets ofFiles(List<String> fileUrls) {
+            return new Assets(null, null, fileUrls.stream().filter(Objects::nonNull).toList());
+        }
+
         /** Видео, вытесненное из урока новым: удаляем так же, как при удалении урока. */
         public static Assets ofVideo(String videoUrl) {
             return new Assets(videoUrl, null, List.of());
@@ -98,7 +103,7 @@ public class LessonAssetCleaner {
         String videoId = KinescopeService.extractVideoId(assets.videoUrl());
         if (videoId != null) {
             if (stillInUse(assets.videoUrl())) {
-                log.info("Видео {} осталось в Kinescope: на него ссылается другой урок", videoId);
+                log.info("Видео {} осталось в Kinescope: на него ссылается другой урок или модуль", videoId);
             } else {
                 tasks.add(new Task("видео " + videoId + " в Kinescope",
                         () -> kinescopeService.deleteVideo(videoId)));
@@ -132,15 +137,15 @@ public class LessonAssetCleaner {
             return;
         }
         if (stillInUse(urlOrKey)) {
-            log.info("Файл {} остался в бакете: на него ссылается другой урок", urlOrKey);
+            log.info("Файл {} остался в бакете: на него ссылается другой урок или модуль", urlOrKey);
             return;
         }
         tasks.add(new Task(what + " " + urlOrKey + " в S3", () -> s3FileStorage.delete(urlOrKey)));
     }
 
     /**
-     * Один и тот же файл можно вставить в два урока — тогда удаление одного
-     * не должно ломать второй. Удалённый урок в подсчёт уже не попадает.
+     * Один и тот же файл можно вставить в два урока или модуля — тогда удаление
+     * одного не должно ломать второй. Удалённый урок в подсчёт уже не попадает.
      */
     private boolean stillInUse(String urlOrKey) {
         try {

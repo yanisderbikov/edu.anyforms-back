@@ -6,13 +6,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import ru.anyforms.edu.dto.admin.CourseRequestDTO;
-import ru.anyforms.edu.dto.admin.LessonFileRequestDTO;
+import ru.anyforms.edu.dto.admin.FileRequestDTO;
 import ru.anyforms.edu.dto.admin.LessonRequestDTO;
 import ru.anyforms.edu.dto.admin.ModuleRequestDTO;
 import ru.anyforms.edu.model.course.Course;
 import ru.anyforms.edu.model.course.CourseModule;
 import ru.anyforms.edu.model.course.Lesson;
 import ru.anyforms.edu.model.course.LessonFile;
+import ru.anyforms.edu.model.course.ModuleFile;
 import ru.anyforms.edu.repository.GetterCourse;
 import ru.anyforms.edu.repository.SaverCourse;
 import ru.anyforms.edu.service.admin.AdminCourseService;
@@ -138,6 +139,8 @@ class AdminCourseServiceImpl implements AdminCourseService {
         assets.add(LessonAssetCleaner.Assets.ofCover(module.getCoverUrl()));
         assets.add(LessonAssetCleaner.Assets.ofVideo(module.getVideoUrl()));
         assets.add(LessonAssetCleaner.Assets.ofCover(module.getVideoCoverUrl()));
+        assets.add(LessonAssetCleaner.Assets.ofFiles(
+                module.getFiles().stream().map(ModuleFile::getFileUrl).toList()));
         saverCourse.deleteModule(module);
         resequenceModules(courseId, null);
         assets.forEach(assetCleaner::deleteAfterCommit);
@@ -192,7 +195,7 @@ class AdminCourseServiceImpl implements AdminCourseService {
 
     @Override
     @Transactional
-    public UUID addLessonFile(UUID lessonId, LessonFileRequestDTO request) {
+    public UUID addLessonFile(UUID lessonId, FileRequestDTO request) {
         LessonFile file = saverCourse.saveFile(LessonFile.builder()
                 .lesson(requireLesson(lessonId))
                 .name(request.getName())
@@ -209,6 +212,28 @@ class AdminCourseServiceImpl implements AdminCourseService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Файл не найден: " + fileId));
         String fileUrl = file.getFileUrl();
         saverCourse.deleteFile(file);
+        assetCleaner.deleteAfterCommit(LessonAssetCleaner.Assets.ofFile(fileUrl));
+    }
+
+    @Override
+    @Transactional
+    public UUID addModuleFile(UUID moduleId, FileRequestDTO request) {
+        ModuleFile file = saverCourse.saveModuleFile(ModuleFile.builder()
+                .module(requireModule(moduleId))
+                .name(request.getName())
+                .fileUrl(request.getFileUrl())
+                .sizeBytes(request.getSizeBytes())
+                .build());
+        return file.getId();
+    }
+
+    @Override
+    @Transactional
+    public void deleteModuleFile(UUID fileId) {
+        ModuleFile file = getterCourse.getModuleFileById(fileId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Файл не найден: " + fileId));
+        String fileUrl = file.getFileUrl();
+        saverCourse.deleteModuleFile(file);
         assetCleaner.deleteAfterCommit(LessonAssetCleaner.Assets.ofFile(fileUrl));
     }
 
