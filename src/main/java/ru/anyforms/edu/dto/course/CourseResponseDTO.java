@@ -42,6 +42,14 @@ public record CourseResponseDTO(
             String videoCover,
             /** Сырое значение из БД — только в админском ответе */
             String videoCoverKey,
+            /** Заголовок блока обратной связи в конце модуля; null = текст по умолчанию */
+            String feedbackTitle,
+            /** Текст под заголовком блока обратной связи; null = без текста */
+            String feedbackDescription,
+            /** Подпись на кнопке обратной связи; null = текст по умолчанию */
+            String feedbackLabel,
+            /** Ссылка кнопки обратной связи; студенту отдаётся только у открытого, null = блока нет */
+            String feedbackUrl,
             String status,
             /** Московское время открытия «2026-09-01T14:00»; null = открыт сразу */
             String opensAt,

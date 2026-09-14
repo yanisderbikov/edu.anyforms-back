@@ -59,6 +59,22 @@ public class CourseModule {
     @Column(name = "video_cover_url", columnDefinition = "TEXT")
     private String videoCoverUrl;
 
+    /** Заголовок над кнопкой обратной связи в конце модуля; null = текст по умолчанию на фронте */
+    @Column(name = "feedback_title")
+    private String feedbackTitle;
+
+    /** Текст под заголовком блока обратной связи; null = без текста */
+    @Column(name = "feedback_description", columnDefinition = "TEXT")
+    private String feedbackDescription;
+
+    /** Подпись на кнопке обратной связи; null = текст по умолчанию на фронте */
+    @Column(name = "feedback_label", length = 64)
+    private String feedbackLabel;
+
+    /** Куда ведёт кнопка обратной связи (форма, чат); null = блок не показываем */
+    @Column(name = "feedback_url", columnDefinition = "TEXT")
+    private String feedbackUrl;
+
     /** NULL = открыт; будущий момент = «Откроется N числа в ЧЧ:ММ». Задаётся в МСК, см. MskTime */
     @Column(name = "opens_at")
     private Instant opensAt;

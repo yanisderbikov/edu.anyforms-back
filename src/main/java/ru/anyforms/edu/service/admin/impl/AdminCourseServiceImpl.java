@@ -75,6 +75,10 @@ class AdminCourseServiceImpl implements AdminCourseService {
                 .coverUrl(request.getCoverUrl())
                 .videoUrl(request.getVideoUrl())
                 .videoCoverUrl(request.getVideoCoverUrl())
+                .feedbackTitle(blankToNull(request.getFeedbackTitle()))
+                .feedbackDescription(blankToNull(request.getFeedbackDescription()))
+                .feedbackLabel(blankToNull(request.getFeedbackLabel()))
+                .feedbackUrl(blankToNull(request.getFeedbackUrl()))
                 .opensAt(MskTime.toInstant(request.getOpensAt()))
                 .build();
         // Модуль, созданный сразу открытым, не «открывается» — письма об открытии
@@ -103,6 +107,10 @@ class AdminCourseServiceImpl implements AdminCourseService {
         module.setCoverUrl(request.getCoverUrl());
         module.setVideoUrl(request.getVideoUrl());
         module.setVideoCoverUrl(request.getVideoCoverUrl());
+        module.setFeedbackTitle(blankToNull(request.getFeedbackTitle()));
+        module.setFeedbackDescription(blankToNull(request.getFeedbackDescription()));
+        module.setFeedbackLabel(blankToNull(request.getFeedbackLabel()));
+        module.setFeedbackUrl(blankToNull(request.getFeedbackUrl()));
         module.setOpensAt(MskTime.toInstant(request.getOpensAt()));
         // Момент открытия перенесли в будущее — модуль снова закрыт: когда время
         // придёт, объявим об открытии заново. Открытие руками (время очищено или
@@ -235,6 +243,11 @@ class AdminCourseServiceImpl implements AdminCourseService {
         String fileUrl = file.getFileUrl();
         saverCourse.deleteModuleFile(file);
         assetCleaner.deleteAfterCommit(LessonAssetCleaner.Assets.ofFile(fileUrl));
+    }
+
+    /** Пустые тексты обратной связи храним как null — фронт подставит значение по умолчанию */
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     /**

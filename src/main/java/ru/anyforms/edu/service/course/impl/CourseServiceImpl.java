@@ -132,6 +132,11 @@ class CourseServiceImpl implements CourseService {
                 admin ? module.getVideoUrl() : null,
                 open || admin ? s3FileStorage.resolveUrl(module.getVideoCoverUrl()) : null,
                 admin ? module.getVideoCoverUrl() : null,
+                module.getFeedbackTitle(),
+                module.getFeedbackDescription(),
+                module.getFeedbackLabel(),
+                // Ссылка обратной связи — содержимое модуля, закрытому наружу не отдаём
+                open || admin ? module.getFeedbackUrl() : null,
                 open ? "open" : "locked",
                 MskTime.format(module.getOpensAt()),
                 moduleLessons.size(),
